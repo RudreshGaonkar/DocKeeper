@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "559398567397",
+    "project_id": "dockeeper-typroject-db",
+    "storage_bucket": "dockeeper-typroject-db.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:559398567397:android:44a320e698166151a3c30c",
+        "android_client_info": {
+          "package_name": "com.example.dockeeper"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAvGiaF_5jajvu6O6Mg8NBqvuFvakqL05E"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

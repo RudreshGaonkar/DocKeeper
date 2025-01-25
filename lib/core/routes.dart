@@ -1,0 +1,10 @@
+const loginRoute = '/login';
+const registerRoute = '/register';
+const verifyEmailRoute ='/verifyEmail';
+const homeRoute = '/home';
+const resetRoute ='/reset_password';
+const addDocumentRoute = '/add';
+const reminderRoute = '/reminder';
+const settingsRoute = '/settings';
+const categoryRoute = '/category';
+const documentRoute = '/documents';
