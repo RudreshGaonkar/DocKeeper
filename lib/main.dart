@@ -2,6 +2,7 @@ import 'package:dockeeper/views/auth/email_verification_screen.dart';
 import 'package:dockeeper/views/auth/register_screen.dart';
 import 'package:dockeeper/views/auth/reset_password_screen.dart';
 import 'package:dockeeper/views/document/add_document_screen.dart';
+import 'package:dockeeper/views/document/view_document_screen.dart';
 import 'package:dockeeper/views/home/category_list_screen.dart';
 import 'package:dockeeper/views/home/document_list_screen.dart';
 import 'package:dockeeper/views/home/home_screen.dart';
@@ -37,20 +38,40 @@ class MyApp extends StatelessWidget {
         resetRoute: (context) => ResetPasswordScreen(),
         verifyEmailRoute: (context) => EmailVerificationScreen(),
         homeRoute: (context) => HomeScreen(),
-        addDocumentRoute : (context) => AddDocumentScreen(),
-        categoryRoute : (context) => CategoryScreen(),
-        settingsRoute : (context) => SettingsScreen(),
+        addDocumentRoute: (context) => AddDocumentScreen(),
+        categoryRoute: (context) => CategoryScreen(),
+        settingsRoute: (context) => SettingsScreen(),
+        viewRoute: (context) {
+          final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+          if (args != null && args.containsKey('documentId')) {
+            return ViewScreen(documentId: args['documentId']);
+          } else {
+            return const ErrorScreen(message: 'Missing or invalid arguments for ViewScreen.');
+          }
+        }
       },
       onGenerateRoute: (settings) {
         if (settings.name == '/documents') {
-          final args = settings.arguments as Map<String, dynamic>;
-          print('Routing to DocumentScreen with args: $args'); // Debugging step
-          return MaterialPageRoute(
-            builder: (context) => DocumentScreen(categoryId: args['categoryId']),
-          );
+          final args = settings.arguments as Map<String, dynamic>?;
+
+          if (args != null && args.containsKey('categoryId')) {
+            // Navigate to DocumentScreen if arguments are valid
+            return MaterialPageRoute(
+              builder: (context) => DocumentScreen(categoryId: args['categoryId']),
+            );
+          } else {
+            // Fallback: Show an error screen for invalid or missing arguments
+            return MaterialPageRoute(
+              builder: (context) => ErrorScreen(
+                message: 'Missing or invalid arguments for the /documents route.',
+              ),
+            );
+          }
         }
-        return null;
+        return null; // Default behavior for unknown routes
       },
+      
+
     );
   }
 }
@@ -63,13 +84,32 @@ class AuthCheck extends StatelessWidget {
 
     // Check if user is logged in and email is verified
     if (user != null) {
-      if (user.emailVerified) {
-        return HomeScreen(); // Navigate to Home if verified
-      } else {
-        return EmailVerificationScreen(); // Navigate to Email Verification
-      }
+      return user.emailVerified ? HomeScreen() : EmailVerificationScreen();
     } else {
-      return LoginScreen(); // Navigate to Login if not logged in
+      return LoginScreen();
     }
+  }
+}
+
+// A fallback screen for invalid routes or arguments
+class ErrorScreen extends StatelessWidget {
+  final String message;
+
+  const ErrorScreen({Key? key, required this.message}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Error'),
+      ),
+      body: Center(
+        child: Text(
+          message,
+          style: const TextStyle(fontSize: 18, color: Colors.red),
+          textAlign: TextAlign.center,
+        ),
+      ),
+    );
   }
 }

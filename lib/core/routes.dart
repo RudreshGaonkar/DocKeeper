@@ -8,3 +8,4 @@ const reminderRoute = '/reminder';
 const settingsRoute = '/settings';
 const categoryRoute = '/category';
 const documentRoute = '/documents';
+const viewRoute = '/view_screen';

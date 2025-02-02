@@ -226,7 +226,7 @@ class _HomeScreenState extends State<HomeScreen> {
     });
     switch (index) {
       case 0:
-        // Navigator.pushReplacementNamed(context, homeRoute);
+        // Navigator.pushNamedAndRemoveUntil(context, homeRoute, (route) => false);
         break;
       case 1:
         // Navigator.pushReplacementNamed(context, reminderRoute);
@@ -238,7 +238,7 @@ class _HomeScreenState extends State<HomeScreen> {
         // Navigator.pushReplacementNamed(context, locationRoute);
         break;
       case 4:
-        Navigator.pushReplacementNamed(context, settingsRoute);
+        Navigator.pushNamed(context, settingsRoute);
         break;
     }
   }

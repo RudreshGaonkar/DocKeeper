@@ -39,14 +39,13 @@ class _CategoryScreenState extends State<CategoryScreen> {
   }
 
   void _navigateToDocuments(Category category) {
-    print(category.categoryId);
-      Navigator.pushNamed(
-        context,
-        documentRoute, // The route name defined in my MaterialApp or onGenerateRoute
-        arguments: {'categoryId': category.categoryId}, // Passing categoryId as argument
+    Navigator.pushNamed(
+      context,
+      '/documents',
+      arguments: {'categoryId': category.categoryId}, // Pass categoryId
     );
-
   }
+
 
   Future<void> _addCategory() async {
     TextEditingController categoryNameController = TextEditingController();
@@ -159,7 +158,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
     });
     switch (index) {
       case 0:
-        Navigator.pushReplacementNamed(context, homeRoute);
+        Navigator.pushNamedAndRemoveUntil(context, homeRoute, (route) => false);
         break;
       case 1:
         // Navigator.pushReplacementNamed(context, reminderRoute);
@@ -171,7 +170,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
         // Navigator.pushReplacementNamed(context, locationRoute);
         break;
       case 4:
-        Navigator.pushReplacementNamed(context, settingsRoute);
+        Navigator.pushNamed(context, settingsRoute);
         break;
       default:
         break;

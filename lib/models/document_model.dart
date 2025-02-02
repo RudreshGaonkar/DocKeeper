@@ -5,6 +5,7 @@ class Document {
   final String description;
   final String categoryId;
   final String fileType;
+  final String? filePath; // Made nullable, if needed
   final DateTime uploadDate;
   final DateTime expirationDate;
   final DateTime reminderDate;
@@ -16,6 +17,7 @@ class Document {
     required this.description,
     required this.categoryId,
     required this.fileType,
+    required this.filePath, // Nullable now
     required this.uploadDate,
     required this.expirationDate,
     required this.reminderDate,
@@ -28,6 +30,7 @@ class Document {
         'description': description,
         'categoryId': categoryId,
         'fileType': fileType,
+        'filePath': filePath ?? '', // Save as empty string if null, or keep as null if your rules allow it
         'uploadDate': uploadDate.toIso8601String(),
         'expirationDate': expirationDate.toIso8601String(),
         'reminderDate': reminderDate.toIso8601String(),
@@ -40,6 +43,7 @@ class Document {
         description: json['description'],
         categoryId: json['categoryId'],
         fileType: json['fileType'],
+        filePath: json['filePath'], // If null, you'll need to handle that downstream\n
         uploadDate: DateTime.parse(json['uploadDate']),
         expirationDate: DateTime.parse(json['expirationDate']),
         reminderDate: DateTime.parse(json['reminderDate']),

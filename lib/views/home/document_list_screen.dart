@@ -1,14 +1,17 @@
-// document_list_screen.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:dockeeper/core/routes.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'dart:io'; // For File class
+import 'package:path_provider/path_provider.dart'; // For getTemporaryDirectory
 
 class DocumentScreen extends StatefulWidget {
   final String categoryId;
 
-  DocumentScreen({required this.categoryId});
+  const DocumentScreen({Key? key, required this.categoryId}) : super(key: key);
 
   @override
   _DocumentScreenState createState() => _DocumentScreenState();
@@ -21,7 +24,6 @@ class _DocumentScreenState extends State<DocumentScreen> {
   @override
   void initState() {
     super.initState();
-    print('DocumentScreen loaded for categoryId: ${widget.categoryId}');
     _fetchUserId();
     _fetchCategoryName();
   }
@@ -31,14 +33,24 @@ class _DocumentScreenState extends State<DocumentScreen> {
   }
 
   Future<void> _fetchCategoryName() async {
-    final categoryDoc = await FirebaseFirestore.instance
-        .collection('categories')
-        .doc(widget.categoryId)
-        .get();
+    try {
+      final categoryDoc = await FirebaseFirestore.instance
+          .collection('categories')
+          .doc(widget.categoryId)
+          .get();
 
-    if (categoryDoc.exists) {
+      if (categoryDoc.exists) {
+        setState(() {
+          categoryName = categoryDoc['name'];
+        });
+      } else {
+        setState(() {
+          categoryName = 'Unknown Category';
+        });
+      }
+    } catch (e) {
       setState(() {
-        categoryName = categoryDoc['name'];
+        categoryName = 'Error fetching category';
       });
     }
   }
@@ -47,119 +59,150 @@ class _DocumentScreenState extends State<DocumentScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(categoryName ?? 'Documents'),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.share),
-            onPressed: () {
-              _shareCategory();
-            },
-            tooltip: 'Share Category',
-          ),
-        ],
+        title: Text('Documents in ${categoryName ?? 'Loading...'}'),
       ),
-      body: userId == null
-          ? Center(child: Text('Please log in to view your documents.'))
-          : StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('documents')
-                  .where('userId', isEqualTo: userId) // Filter by userId
-                  .where('categoryId', isEqualTo: widget.categoryId) // Filter by categoryId
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return Center(child: CircularProgressIndicator());
-                }
-                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  return Center(child: Text('No documents found.'));
-                }
+      body: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('documents')
+            .where('categoryId', isEqualTo: widget.categoryId) // Match using categoryId
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError) {
+            return const Center(child: Text('Error loading documents'));
+          }
+          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+            return const Center(
+                child: Text('No documents found for this category.'));
+          }
 
-                final documents = snapshot.data!.docs;
+          final documents = snapshot.data!.docs;
 
-                return ListView.builder(
-                  itemCount: documents.length,
-                  itemBuilder: (context, index) {
-                    final doc = documents[index].data() as Map<String, dynamic>;
+          return ListView.builder(
+            itemCount: documents.length,
+            itemBuilder: (context, index) {
+              final doc = documents[index].data() as Map<String, dynamic>;
 
-                    return Card(
-                      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      child: ListTile(
-                        leading: Icon(
-                          doc['fileType'] == 'Image' ? Icons.image : Icons.file_present,
-                          color: Colors.blue,
-                        ),
-                        title: Text(doc['title'] ?? 'Untitled'),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            if (doc['description'] != null)
-                              Text(doc['description'], style: TextStyle(fontSize: 12)),
-                            SizedBox(height: 4),
-                            Text(
-                              'Issue Date: ${_formatDate(doc['uploadDate'])}',
-                              style: TextStyle(fontSize: 12),
-                            ),
-                            Text(
-                              'Expiry Date: ${_formatDate(doc['expirationDate'])}',
-                              style: TextStyle(fontSize: 12),
-                            ),
-                            if (DateTime.parse(doc['expirationDate']).isBefore(DateTime.now()))
-                              Text(
-                                'Expired',
-                                style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
-                              ),
-                          ],
-                        ),
-                        trailing: PopupMenuButton<String>(
-                          onSelected: (value) {
-                            if (value == 'Edit') {
-                              _editDocument(doc);
-                            } else if (value == 'Delete') {
-                              _deleteDocument(doc['documentId']);
-                            }
-                          },
-                          itemBuilder: (context) => [
-                            PopupMenuItem(value: 'Edit', child: Text('Edit')),
-                            PopupMenuItem(value: 'Delete', child: Text('Delete')),
-                          ],
-                        ),
+              return Card(
+                child: ListTile(
+                  title: Text(doc['title'] ?? 'Unnamed Document'),
+                  subtitle: Text(doc['description'] ?? 'No description available'),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.share),
+                        onPressed: () => _shareDocument(doc),
                       ),
+                      PopupMenuButton(
+                        itemBuilder: (context) => [
+                          const PopupMenuItem(
+                            value: 'delete',
+                            child: Text('Delete'),
+                          ),
+                        ],
+                        onSelected: (value) async {
+                          if (value == 'delete') {
+                            final documentId = doc['documentId'] as String; // Ensure this is the correct field for the Firestore document ID
+                            final filePath = doc['filePath'] as String? ?? ''; // Ensure this is the field where the file path is stored
+                            await _deleteDocument(documentId, filePath); // Call _deleteDocument here
+                          }
+                        },
+                      ),
+
+                    ],
+                  ),
+                  onTap: () {
+                    Navigator.pushNamed(
+                      context,
+                      viewRoute,
+                      arguments: {'documentId': doc['index'].id}, // Error : The getter 'id' isn't defined for the type 'Map<String, dynamic>'.Try importing the library that defines 'id', correcting the name to the name of an existing getter, or defining a getter or field named 'id'.
                     );
                   },
-                );
-              },
-            ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.pushNamed(context, '/add');
+                ),
+              );
+
+            },
+          );
         },
-        child: Icon(Icons.add),
-        tooltip: 'Add Document',
       ),
     );
   }
 
-  void _shareCategory() {
-    Share.share('Check out the ${categoryName ?? "category"} documents on DocKeeper!');
+  Future<void> _shareDocument(Map<String, dynamic> doc) async {
+    try {
+      final filePath = doc['filePath'] as String?; // Firebase Storage file path
+      final title = doc['title'] ?? 'Untitled Document';
+
+      if (filePath != null && filePath.isNotEmpty) {
+        // Create a reference to the file in Firebase Storage
+        final ref = FirebaseStorage.instance.ref(filePath);
+
+        // Get the temporary directory
+        final tempDir = await getTemporaryDirectory();
+        final localFilePath = '${tempDir.path}/$title.pdf';
+
+        // Download the file to the local file system
+        final localFile = File(localFilePath);
+        await ref.writeToFile(localFile);
+
+        // Share the file
+        if (await localFile.exists()) {
+          final xFile = XFile(localFile.path, name: '$title.pdf');
+          await Share.shareXFiles(
+            [xFile],
+            text: 'Check out this document: $title',
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('File could not be downloaded.')),
+          );
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No file available to share.')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error sharing document: $e')),
+      );
+    }
   }
+
+
+
+
+
+
+  Future<void> _deleteDocument(String documentId, String filePath) async {
+    try {
+      // Delete the file from Firebase Storage
+      if (filePath.isNotEmpty) {
+        final ref = FirebaseStorage.instance.ref(filePath);
+        await ref.delete();
+      }
+
+      // Delete the document from Firestore
+      await FirebaseFirestore.instance.collection('documents').doc(documentId).delete();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Document deleted successfully.')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to delete document: $e')),
+      );
+    }
+  }
+
 
   String _formatDate(String? date) {
     if (date == null) return 'Unknown';
     final parsedDate = DateTime.tryParse(date);
     if (parsedDate == null) return 'Unknown';
     return DateFormat('yyyy-MM-dd').format(parsedDate);
-  }
-
-  void _editDocument(Map<String, dynamic> doc) {
-    Navigator.pushNamed(context, '/editDocument', arguments: doc);
-  }
-
-  Future<void> _deleteDocument(String documentId) async {
-    try {
-      await FirebaseFirestore.instance.collection('documents').doc(documentId).delete();
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Document deleted successfully.')));
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to delete document: $e')));
-    }
   }
 }
