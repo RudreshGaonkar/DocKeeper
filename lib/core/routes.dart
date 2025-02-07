@@ -9,3 +9,4 @@ const settingsRoute = '/settings';
 const categoryRoute = '/category';
 const documentRoute = '/documents';
 const viewRoute = '/view_screen';
+const updateRoute = '/update_screen';

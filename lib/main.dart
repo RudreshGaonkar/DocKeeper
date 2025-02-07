@@ -1,11 +1,14 @@
+import 'package:dockeeper/services/notification_service.dart';
 import 'package:dockeeper/views/auth/email_verification_screen.dart';
 import 'package:dockeeper/views/auth/register_screen.dart';
 import 'package:dockeeper/views/auth/reset_password_screen.dart';
 import 'package:dockeeper/views/document/add_document_screen.dart';
+import 'package:dockeeper/views/document/edit_document_screen.dart';
 import 'package:dockeeper/views/document/view_document_screen.dart';
 import 'package:dockeeper/views/home/category_list_screen.dart';
 import 'package:dockeeper/views/home/document_list_screen.dart';
 import 'package:dockeeper/views/home/home_screen.dart';
+import 'package:dockeeper/views/home/reminder_list_screen.dart';
 import 'package:dockeeper/views/settings/app_settings_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -19,6 +22,7 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  await NotificationService().init();
   runApp(MyApp());
 }
 
@@ -41,6 +45,8 @@ class MyApp extends StatelessWidget {
         addDocumentRoute: (context) => AddDocumentScreen(),
         categoryRoute: (context) => CategoryScreen(),
         settingsRoute: (context) => SettingsScreen(),
+        reminderRoute: (context) => ReminderScreen(),
+        // For updateRoute we now handle it in onGenerateRoute.
         viewRoute: (context) {
           final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
           if (args != null && args.containsKey('documentId')) {
@@ -48,30 +54,39 @@ class MyApp extends StatelessWidget {
           } else {
             return const ErrorScreen(message: 'Missing or invalid arguments for ViewScreen.');
           }
-        }
+        },
       },
       onGenerateRoute: (settings) {
         if (settings.name == '/documents') {
           final args = settings.arguments as Map<String, dynamic>?;
-
           if (args != null && args.containsKey('categoryId')) {
-            // Navigate to DocumentScreen if arguments are valid
             return MaterialPageRoute(
               builder: (context) => DocumentScreen(categoryId: args['categoryId']),
             );
           } else {
-            // Fallback: Show an error screen for invalid or missing arguments
             return MaterialPageRoute(
-              builder: (context) => ErrorScreen(
+              builder: (context) => const ErrorScreen(
                 message: 'Missing or invalid arguments for the /documents route.',
               ),
             );
           }
         }
-        return null; // Default behavior for unknown routes
+        if (settings.name == updateRoute) {
+          final args = settings.arguments as Map<String, dynamic>?;
+          if (args != null && args.containsKey('documentId')) {
+            return MaterialPageRoute(
+              builder: (context) => UpdateDocumentScreen(documentId: args['documentId']),
+            );
+          } else {
+            return MaterialPageRoute(
+              builder: (context) => const ErrorScreen(
+                message: 'Missing or invalid arguments for UpdateDocumentScreen.',
+              ),
+            );
+          }
+        }
+        return null; // Default behavior for unknown routes.
       },
-      
-
     );
   }
 }
@@ -91,7 +106,7 @@ class AuthCheck extends StatelessWidget {
   }
 }
 
-// A fallback screen for invalid routes or arguments
+// A fallback screen for invalid routes or arguments.
 class ErrorScreen extends StatelessWidget {
   final String message;
 

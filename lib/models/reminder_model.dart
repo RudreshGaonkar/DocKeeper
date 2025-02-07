@@ -1,32 +1,38 @@
-// reminder_model.dart
+/// The Reminder model represents a scheduled reminder for a document.
 class Reminder {
   final String reminderId;
   final String userId;
   final String documentId;
-  final DateTime reminderDate;
+  final DateTime reminderDateTime; // Stores the full date and time.
   final bool isCompleted;
 
   Reminder({
     required this.reminderId,
     required this.userId,
     required this.documentId,
-    required this.reminderDate,
-    required this.isCompleted,
+    required this.reminderDateTime,
+    this.isCompleted = false,
   });
 
-  Map<String, dynamic> toJson() => {
-        'reminderId': reminderId,
-        'userId': userId,
-        'documentId': documentId,
-        'reminderDate': reminderDate.toIso8601String(),
-        'isCompleted': isCompleted,
-      };
+  /// Converts a Reminder instance to a Map for Firestore storage.
+  Map<String, dynamic> toMap() {
+    return {
+      'reminderId': reminderId,
+      'userId': userId,
+      'documentId': documentId,
+      'reminderDateTime': reminderDateTime.toIso8601String(),
+      'isCompleted': isCompleted,
+    };
+  }
 
-  factory Reminder.fromJson(Map<String, dynamic> json) => Reminder(
-        reminderId: json['reminderId'],
-        userId: json['userId'],
-        documentId: json['documentId'],
-        reminderDate: DateTime.parse(json['reminderDate']),
-        isCompleted: json['isCompleted'],
-      );
+  /// Creates a Reminder instance from a Map (e.g. data fetched from Firestore).
+  static Reminder fromMap(Map<String, dynamic> map) {
+    return Reminder(
+      reminderId: map['reminderId'],
+      userId: map['userId'],
+      documentId: map['documentId'],
+      reminderDateTime: DateTime.parse(map['reminderDateTime']),
+      isCompleted: map['isCompleted'] ?? false,
+    );
+  }
 }
