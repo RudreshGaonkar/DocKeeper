@@ -1,57 +1,63 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:timezone/data/latest.dart' as tz;
+import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
 class NotificationService {
-  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+  static final FlutterLocalNotificationsPlugin _notificationsPlugin =
       FlutterLocalNotificationsPlugin();
 
-  // Singleton pattern.
-  static final NotificationService _instance = NotificationService._internal();
-  factory NotificationService() => _instance;
-  NotificationService._internal();
+  static Future<void> initialize() async {
+    const AndroidInitializationSettings androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
 
-  Future<void> init() async {
-    // Initialize timezone data.
-    tz.initializeTimeZones();
+    final FlutterLocalNotificationsPlugin notificationsPlugin = FlutterLocalNotificationsPlugin();
 
-    const AndroidInitializationSettings initializationSettingsAndroid =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
+    final InitializationSettings settings = InitializationSettings(android: androidSettings);
 
-    const InitializationSettings initializationSettings =
-        InitializationSettings(android: initializationSettingsAndroid);
-    await flutterLocalNotificationsPlugin.initialize(initializationSettings);
+    await notificationsPlugin.initialize(settings);
+
+    // Request permission for notifications (important for Android 13+)
+    // await notificationsPlugin.resolvePlatformSpecificImplementation<
+    //     AndroidFlutterLocalNotificationsPlugin>()?.requestNotificationsPermission();
   }
 
-  Future<void> scheduleNotification(String documentId, String title, DateTime scheduledDate) async {
-    // Generate a unique notification id. For simplicity, we use the last 6 digits of documentId.
-    int notifId = int.tryParse(documentId.substring(documentId.length - 6)) ?? 0;
-
-    const AndroidNotificationDetails androidPlatformChannelSpecifics =
-        AndroidNotificationDetails(
-      'document_reminder_channel', 
-      'Document Reminders',
-      channelDescription: 'Reminders for documents',
-      importance: Importance.max,
-      priority: Priority.high,
-      ticker: 'ticker',
-    );
-
-    const NotificationDetails platformChannelSpecifics =
-        NotificationDetails(android: androidPlatformChannelSpecifics);
-
-    // Convert scheduledDate to a timezone-aware date using the local timezone.
-    final tz.TZDateTime scheduledTZDate = tz.TZDateTime.from(scheduledDate, tz.local);
-
-    await flutterLocalNotificationsPlugin.zonedSchedule(
-      notifId,
-      'Reminder: $title',
-      'Your document "$title" is due soon.',
-      scheduledTZDate,
-      platformChannelSpecifics,
-      uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
-      // Use the new parameter for allowing notifications while idle:
+  static Future<void> scheduleNotification(
+      String documentId, String title, DateTime scheduledDate) async {
+    tz.initializeTimeZones();
+    await _notificationsPlugin.zonedSchedule(
+      documentId.hashCode,
+      title,
+      'Reminder for your document',
+      tz.TZDateTime.from(scheduledDate, tz.local),
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          'scheduled_channel',
+          'Scheduled Notifications',
+          importance: Importance.high,
+          priority: Priority.high,
+        ),
+      ),
+      androidAllowWhileIdle: true,
+      matchDateTimeComponents: DateTimeComponents.time,
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
+    );
+  }
+
+  static Future<void> showInstantNotification(String title, String body) async {
+    const NotificationDetails details = NotificationDetails(
+      android: AndroidNotificationDetails(
+        'instant_channel',
+        'Instant Notifications',
+        importance: Importance.high,
+        priority: Priority.high,
+      ),
+    );
+    await _notificationsPlugin.show(
+      DateTime.now().millisecondsSinceEpoch.remainder(100000),
+      title,
+      body,
+      details,
     );
   }
 }

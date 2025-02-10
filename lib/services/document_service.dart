@@ -1,5 +1,4 @@
 import 'dart:io';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import '../models/document_model.dart';
@@ -7,36 +6,31 @@ import '../models/document_model.dart';
 class DocumentService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // Add a new document with a provided documentId.
+  /// Adds a new document to Firestore using your provided documentId.
   Future<void> addDocument(Document document) async {
     try {
-      // Create the document using the provided documentId.
+      // Use the documentId as the document key.
       await _firestore.collection('documents').doc(document.documentId).set(document.toJson());
     } catch (e) {
       throw Exception('Failed to add document: $e');
     }
   }
 
-  /// Uploads a file to Firebase Storage using the given documentId and file,
-  /// then updates the Firestore document's filePath field with the download URL.
-  ///
-  /// Returns the download URL as a String.
+  /// Uploads a file to Firebase Storage under a folder structure based on documentId.
+  /// It then updates the document in Firestore with the download URL.
   Future<String> uploadFile(String documentId, File file) async {
     try {
-      // Create a reference to the file location in Firebase Storage.
-      final storageRef = FirebaseStorage.instance
-          .ref('documents/$documentId/${file.path.split('/').last}');
-      
-      // Start uploading the file.
+      // Create a reference with a path like 'documents/{documentId}/{filename}'
+      final storageRef = FirebaseStorage.instance.ref('documents/$documentId/${file.path.split('/').last}');
       final uploadTask = storageRef.putFile(file);
 
       // Listen for progress updates.
       uploadTask.snapshotEvents.listen((TaskSnapshot snapshot) {
         final progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-        print('Upload is $progress% complete.');
+        print('Upload is ${progress.toStringAsFixed(0)}% complete.');
       });
 
-      // Await upload completion.
+      // Wait for the upload to complete.
       final snapshot = await uploadTask;
 
       if (snapshot.state == TaskState.success) {
@@ -44,17 +38,10 @@ class DocumentService {
         final downloadUrl = await snapshot.ref.getDownloadURL();
         print('File uploaded successfully. Download URL: $downloadUrl');
 
-        // Update the Firestore document with the download URL.
-        // Option 1: Using update()
-        // await _firestore.collection('documents').doc(documentId).update({
-        //   'filePath': downloadUrl,
-        // });
-        
-        // Option 2: If you're not 100% sure the document exists, you can merge:
-        await _firestore.collection('documents').doc(documentId).set({
+        // Update the document in Firestore with the filePath (download URL).
+        await _firestore.collection('documents').doc(documentId).update({
           'filePath': downloadUrl,
-        }, SetOptions(merge: true));
-
+        });
         return downloadUrl;
       } else {
         throw Exception('File upload failed. Task state: ${snapshot.state}');
@@ -65,42 +52,7 @@ class DocumentService {
     }
   }
 
-  // Fetch all documents for a specific user.
-  Future<List<Document>> fetchDocuments(String userId) async {
-    try {
-      final querySnapshot = await _firestore
-          .collection('documents')
-          .where('userId', isEqualTo: userId)
-          .get();
-
-      return querySnapshot.docs
-          .map((doc) => Document.fromJson(doc.data()))
-          .toList();
-    } catch (e) {
-      throw Exception('Failed to fetch documents: $e');
-    }
-  }
-
-  // Fetch document name by documentId.
-  Future<String> fetchDocumentName(String documentId) async {
-    try {
-      final docSnapshot = await _firestore
-          .collection('documents')
-          .doc(documentId)
-          .get();
-
-      if (docSnapshot.exists) {
-        // Ensure that the field used here matches your model (e.g., 'title' or 'name').
-        return docSnapshot.data()?['title'] ?? "Unknown Document";
-      } else {
-        return "Unknown Document";
-      }
-    } catch (e) {
-      return "Error fetching document";
-    }
-  }
-
-  // Update an existing document.
+  /// Updates an existing document.
   Future<void> updateDocument(String documentId, Map<String, dynamic> updates) async {
     try {
       await _firestore.collection('documents').doc(documentId).update(updates);
@@ -109,12 +61,26 @@ class DocumentService {
     }
   }
 
-  // Delete a document.
+  /// Deletes a document from Firestore.
   Future<void> deleteDocument(String documentId) async {
     try {
       await _firestore.collection('documents').doc(documentId).delete();
     } catch (e) {
       throw Exception('Failed to delete document: $e');
+    }
+  }
+
+  /// Fetches the document's title by documentId (used for display purposes).
+  Future<String> fetchDocumentName(String documentId) async {
+    try {
+      final docSnapshot = await _firestore.collection('documents').doc(documentId).get();
+      if (docSnapshot.exists) {
+        return docSnapshot.data()?['title'] ?? "Unknown Document";
+      } else {
+        return "Unknown Document";
+      }
+    } catch (e) {
+      return "Error fetching document";
     }
   }
 }

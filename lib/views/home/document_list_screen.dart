@@ -78,7 +78,8 @@ class _DocumentScreenState extends State<DocumentScreen> {
               return const Center(child: Text('Error loading documents'));
             }
             if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-              return const Center(child: Text('No documents found for this category.'));
+              return const Center(
+                  child: Text('No documents found for this category.'));
             }
 
             final documents = snapshot.data!.docs;
@@ -87,11 +88,13 @@ class _DocumentScreenState extends State<DocumentScreen> {
               itemCount: documents.length,
               itemBuilder: (context, index) {
                 final documentSnapshot = documents[index];
-                final docData = documentSnapshot.data() as Map<String, dynamic>;
+                final docData =
+                    documentSnapshot.data() as Map<String, dynamic>;
 
                 return Card(
                   elevation: 4,
-                  margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                  margin:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -99,11 +102,13 @@ class _DocumentScreenState extends State<DocumentScreen> {
                     contentPadding: const EdgeInsets.all(12),
                     title: Text(
                       docData['title'] ?? 'Unnamed Document',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold, fontSize: 16),
                     ),
                     subtitle: Padding(
                       padding: const EdgeInsets.only(top: 4),
-                      child: Text(docData['description'] ?? 'No description available'),
+                      child: Text(
+                          docData['description'] ?? 'No description available'),
                     ),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -116,7 +121,8 @@ class _DocumentScreenState extends State<DocumentScreen> {
                           onSelected: (value) async {
                             if (value == 'delete') {
                               final documentId = documentSnapshot.id;
-                              final filePath = docData['filePath'] as String? ?? '';
+                              final filePath =
+                                  docData['filePath'] as String? ?? '';
                               await _deleteDocument(documentId, filePath);
                             }
                           },
@@ -146,76 +152,117 @@ class _DocumentScreenState extends State<DocumentScreen> {
     );
   }
 
+  /// Downloads the file from Firebase Storage into a persistent folder ("DocKeeper"),
+  /// shows a progress dialog with download progress, and then shares the file using share_plus.
   Future<void> _shareDocument(QueryDocumentSnapshot documentSnapshot) async {
     try {
       final docData = documentSnapshot.data() as Map<String, dynamic>;
       final filePath = docData['filePath'] as String?;
+      print("File path from Firestore: $filePath");
       final title = docData['title'] ?? 'Untitled Document';
 
-      if (filePath != null && filePath.isNotEmpty) {
-        // Create a reference to the file in Firebase Storage.
-        final ref = FirebaseStorage.instance.ref(filePath);
-        print('Downloading file from: $filePath');
-
-        // Get the temporary directory.
-        final tempDir = await getTemporaryDirectory();
-        final sanitizedTitle = title.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
-        final localFilePath = '${tempDir.path}/$sanitizedTitle.pdf';
-        final localFile = File(localFilePath);
-
-        try {
-          // Download the file.
-          await ref.writeToFile(localFile);
-          print('File downloaded to: $localFilePath');
-        } catch (e) {
-          print("Error downloading file: $e");
-          ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Error downloading file: $e')));
-          return;
-        }
-
-        if (await localFile.exists()) {
-          final xFile = XFile(localFile.path, name: '$sanitizedTitle.pdf');
-          await Share.shareXFiles(
-            [xFile],
-            text: 'Document: $title',
-          );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('File could not be downloaded.')),
-          );
-        }
-      } else {
+      if (filePath == null || filePath.isEmpty) {
+        print("No file path provided in document.");
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('No file available to share.')),
         );
+        return;
+      }
+
+      // Use refFromURL because filePath is a full download URL.
+      final ref = FirebaseStorage.instance.refFromURL(filePath);
+      print("Firebase Storage reference: $ref");
+
+      // Get the application's documents directory and create a persistent "DocKeeper" folder.
+      final appDocDir = await getApplicationDocumentsDirectory();
+      final storageDir = Directory('${appDocDir.path}/DocKeeper');
+      print("Storage directory: $storageDir");
+      if (!(await storageDir.exists())) {
+        await storageDir.create(recursive: true);
+        print("Created storage directory.");
+      }
+
+      // Sanitize the file name.
+      final sanitizedTitle =
+          title.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
+      final localFile = File('${storageDir.path}/$sanitizedTitle.pdf');
+      print("Local file path: ${localFile.path}");
+
+      double progress = 0.0;
+      // Create the download task.
+      final downloadTask = ref.writeToFile(localFile);
+
+      // Show a progress dialog.
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return StatefulBuilder(builder: (context, setStateDialog) {
+            downloadTask.snapshotEvents.listen((TaskSnapshot snapshot) {
+              if (snapshot.totalBytes > 0) {
+                final double newProgress =
+                    snapshot.bytesTransferred / snapshot.totalBytes;
+                setStateDialog(() {
+                  progress = newProgress;
+                });
+                print('Download progress: ${(progress * 100).toStringAsFixed(0)}%');
+              }
+            });
+            return AlertDialog(
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text("Downloading... ${(progress * 100).toStringAsFixed(0)}%"),
+                  const SizedBox(height: 16),
+                  LinearProgressIndicator(value: progress),
+                ],
+              ),
+            );
+          });
+        },
+      );
+
+      // Wait for the download to complete.
+      await downloadTask;
+      // Dismiss the progress dialog.
+      Navigator.of(context).pop();
+
+      if (await localFile.exists()) {
+        print("File downloaded successfully.");
+        final xFile = XFile(localFile.path, name: '$sanitizedTitle.pdf');
+        await Share.shareXFiles([xFile], text: 'Document: $title');
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('File could not be downloaded.')),
+        );
       }
     } catch (e) {
-      print('Error sharing document: $e');
+      try {
+        Navigator.of(context).pop();
+      } catch (_) {}
+      print("Error sharing document: $e");
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error sharing document: $e')),
       );
     }
   }
 
+  /// Deletes the document from Firestore, its file from Firebase Storage,
+  /// and any associated reminders.
   Future<void> _deleteDocument(String documentId, String filePath) async {
     try {
-      // Delete the file from Firebase Storage if a file path exists.
       if (filePath.isNotEmpty) {
-        final ref = FirebaseStorage.instance.ref(filePath);
+        // Use refFromURL because the stored filePath is a full download URL.
+        final ref = FirebaseStorage.instance.refFromURL(filePath);
         try {
           await ref.getMetadata(); // Check if the file exists.
           await ref.delete();
           print("File deleted successfully.");
         } catch (e) {
           print("Error or file not found in storage: $e");
-          // You may choose to ignore if the file does not exist.
         }
       }
-      // Delete the document from Firestore.
       await FirebaseFirestore.instance.collection('documents').doc(documentId).delete();
-      
-      // Delete associated reminders from Firestore.
       final reminderQuerySnapshot = await FirebaseFirestore.instance
           .collection('reminders')
           .where('documentId', isEqualTo: documentId)
@@ -223,7 +270,6 @@ class _DocumentScreenState extends State<DocumentScreen> {
       for (var doc in reminderQuerySnapshot.docs) {
         await doc.reference.delete();
       }
-
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Document and associated reminders deleted successfully.')),
       );

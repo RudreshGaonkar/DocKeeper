@@ -9,6 +9,7 @@ class Document {
   final DateTime uploadDate;
   final DateTime expirationDate;
   final DateTime reminderDate;
+  final String issueAuthority;
 
   Document({
     required this.documentId,
@@ -21,6 +22,7 @@ class Document {
     required this.uploadDate,
     required this.expirationDate,
     required this.reminderDate,
+    required this.issueAuthority,
   });
 
   Map<String, dynamic> toJson() => {
@@ -34,6 +36,7 @@ class Document {
         'uploadDate': uploadDate.toIso8601String(),
         'expirationDate': expirationDate.toIso8601String(),
         'reminderDate': reminderDate.toIso8601String(),
+        'issueAuthority': issueAuthority,
       };
 
   factory Document.fromJson(Map<String, dynamic> json) => Document(
@@ -47,5 +50,6 @@ class Document {
         uploadDate: DateTime.parse(json['uploadDate']),
         expirationDate: DateTime.parse(json['expirationDate']),
         reminderDate: DateTime.parse(json['reminderDate']),
+        issueAuthority: json['issueAuthority'] ?? '',
       );
 }
