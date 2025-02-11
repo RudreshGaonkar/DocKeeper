@@ -16,8 +16,8 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   File? _profileImage;
   final ImagePicker _picker = ImagePicker();
-  bool _isDarkMode = false; // Local toggle for Dark Mode
   int currentTabIndex = 4;
+  String? _userId;
 
   @override
   void initState() {
@@ -25,10 +25,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _loadProfilePicture();
   }
 
-  /// Loads the profile picture path from SharedPreferences.
+  /// Loads the profile picture if it belongs to the logged-in user.
   Future<void> _loadProfilePicture() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    _userId = user.uid;
     final prefs = await SharedPreferences.getInstance();
-    final profilePath = prefs.getString('profile_picture');
+    final profilePath = prefs.getString('profile_picture_$_userId');
+
     if (profilePath != null && profilePath.isNotEmpty) {
       setState(() {
         _profileImage = File(profilePath);
@@ -36,13 +41,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  /// Saves the selected profile picture path to SharedPreferences.
+  /// Saves the profile picture path for the specific user.
   Future<void> _saveProfilePicture(String path) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('profile_picture', path);
+    await prefs.setString('profile_picture_${user.uid}', path);
   }
 
-  /// Picks a profile picture from the gallery and saves its path locally.
+  /// Picks a profile picture, saves it, and displays it.
   Future<void> _pickProfilePicture() async {
     final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
     if (pickedFile != null) {
@@ -66,12 +74,51 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  /// Toggles dark mode.
-  void _toggleDarkMode(bool value) {
-    setState(() {
-      _isDarkMode = value;
-    });
-    // In a full implementation, update your app's theme state (via Provider, Bloc, etc.)
+  /// Logs out and redirects to the Reset Password screen.
+  Future<void> _resetPassword() async {
+    await FirebaseAuth.instance.signOut();
+    Navigator.pushNamedAndRemoveUntil(context, resetRoute, (route) => false);
+  }
+
+  /// Deletes the user account after confirmation.
+  Future<void> _deleteAccount() async {
+    bool confirmDelete = await _showConfirmationDialog(
+      title: "Delete Account",
+      content: "Are you sure you want to delete your account? This action cannot be undone.",
+    );
+
+    if (confirmDelete) {
+      try {
+        await FirebaseAuth.instance.currentUser?.delete();
+        Navigator.pushNamedAndRemoveUntil(context, loginRoute, (route) => false);
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to delete account: $e')),
+        );
+      }
+    }
+  }
+
+  /// Shows a confirmation dialog before deleting the account.
+  Future<bool> _showConfirmationDialog({required String title, required String content}) async {
+    return await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text(title),
+            content: Text(content),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: Text("Cancel"),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: Text("Confirm", style: TextStyle(color: Colors.red)),
+              ),
+            ],
+          ),
+        ) ??
+        false;
   }
 
   @override
@@ -110,6 +157,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
             const SizedBox(height: 16),
+
             // Account Section
             ListTile(
               leading: const Icon(Icons.person),
@@ -117,34 +165,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
               subtitle: const Text('Manage your account details'),
             ),
             ListTile(
+              leading: const Icon(Icons.password, color: Colors.blue),
+              title: const Text('Reset Password'),
+              onTap: _resetPassword,
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete, color: Colors.red),
+              title: const Text('Delete Account'),
+              onTap: _deleteAccount,
+            ),
+            ListTile(
               leading: const Icon(Icons.logout, color: Colors.red),
               title: const Text('Log Out'),
               onTap: _logout,
             ),
+
             const Divider(),
-            // Appearance Section
+
+            // About Section
             ExpansionTile(
-              leading: const Icon(Icons.palette),
-              title: const Text('Appearance'),
+              leading: const Icon(Icons.info_outline),
+              title: const Text('About'),
               children: [
-                SwitchListTile(
-                  title: const Text('Dark Mode'),
-                  value: _isDarkMode,
-                  onChanged: _toggleDarkMode,
-                  secondary: const Icon(Icons.brightness_6),
-                ),
                 ListTile(
-                  title: const Text('System Default'),
-                  onTap: () {
-                    // reset toggle to system default settings
-                    setState(() {
-                      _isDarkMode = false;
-                    });
-                  },
+                  title: const Text('App Version'),
+                  subtitle: const Text('1.0.0'),
                 ),
               ],
             ),
-            // Additional settings sections can be added here.
           ],
         ),
       ),
@@ -164,13 +212,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
         Navigator.pushNamedAndRemoveUntil(context, homeRoute, (route) => false);
         break;
       case 1:
-        // Navigator.pushReplacementNamed(context, reminderRoute);
+        Navigator.pushReplacementNamed(context, reminderRoute);
         break;
       case 2:
         Navigator.pushNamedAndRemoveUntil(context, addDocumentRoute, (route) => false);
         break;
       case 3:
-        // Navigator.pushReplacementNamed(context, locationRoute);
+        Navigator.pushReplacementNamed(context, locationRoute);
         break;
       case 4:
         // Already in settings, optionally do nothing.

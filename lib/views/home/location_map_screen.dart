@@ -229,28 +229,43 @@ class _LocationScreenState extends State<LocationScreen> {
                   const SizedBox(height: 16),
                   // Google Map view.
                   Expanded(
-                    child: _documentLocation == null
-                        ? const Center(child: Text("No location available."))
-                        : GoogleMap(
-                            initialCameraPosition: CameraPosition(
-                              target: _documentLocation!,
-                              zoom: 15,
-                            ),
-                            markers: {
-                              Marker(
-                                markerId: const MarkerId("docLocation"),
-                                position: _documentLocation!,
-                                infoWindow: InfoWindow(
-                                  title: _selectedDocument?.title ?? "",
-                                  snippet: _selectedDocument?.issueAuthority ?? "",
+                    child: Card(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12), // Soft rounded corners
+                      ),
+                      elevation: 4, // Adds a shadow for a lifted effect
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12), // Ensures rounded corners
+                        child: _documentLocation == null
+                            ? const Center(
+                                child: Text(
+                                  "Location will appear here.",
+                                  style: TextStyle(color: Colors.grey, fontSize: 16),
                                 ),
+                              )
+                            : GoogleMap(
+                                initialCameraPosition: CameraPosition(
+                                  target: _documentLocation!,
+                                  zoom: 15,
+                                ),
+                                markers: {
+                                  Marker(
+                                    markerId: const MarkerId("docLocation"),
+                                    position: _documentLocation!,
+                                    infoWindow: InfoWindow(
+                                      title: _selectedDocument?.title ?? "",
+                                      snippet: _selectedDocument?.issueAuthority ?? "",
+                                    ),
+                                  ),
+                                },
+                                onMapCreated: (GoogleMapController controller) {
+                                  _mapController = controller;
+                                },
                               ),
-                            },
-                            onMapCreated: (GoogleMapController controller) {
-                              _mapController = controller;
-                            },
-                          ),
+                      ),
+                    ),
                   ),
+
                   const SizedBox(height: 16),
                   // Button to open maps app for directions.
                   Center(

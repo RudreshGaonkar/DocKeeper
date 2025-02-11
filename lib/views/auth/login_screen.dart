@@ -141,6 +141,23 @@ class _LoginScreenState extends State<LoginScreen> {
                           return;
                         }
 
+                         // Show loading dialog
+                        showDialog(
+                          context: context,
+                          barrierDismissible: false, // Prevent dismissing by tapping outside
+                          builder: (context) {
+                            return AlertDialog(
+                              content: Row(
+                                children: [
+                                  CircularProgressIndicator(),
+                                  SizedBox(width: 20),
+                                  Text("Logging in..."),
+                                ],
+                              ),
+                            );
+                          },
+                        );
+
                         try {
                           // Attempt to log in
                           await AuthService().loginWithEmailAndPassword(email, password);

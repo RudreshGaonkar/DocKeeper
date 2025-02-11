@@ -14,10 +14,7 @@ class NotificationService {
     final InitializationSettings settings = InitializationSettings(android: androidSettings);
 
     await notificationsPlugin.initialize(settings);
-
-    // Request permission for notifications (important for Android 13+)
-    // await notificationsPlugin.resolvePlatformSpecificImplementation<
-    //     AndroidFlutterLocalNotificationsPlugin>()?.requestNotificationsPermission();
+    
   }
 
   static Future<void> scheduleNotification(
@@ -26,7 +23,7 @@ class NotificationService {
     await _notificationsPlugin.zonedSchedule(
       documentId.hashCode,
       title,
-      'Reminder for your document',
+      'Your $title document expires soon.',
       tz.TZDateTime.from(scheduledDate, tz.local),
       const NotificationDetails(
         android: AndroidNotificationDetails(
@@ -38,10 +35,21 @@ class NotificationService {
       ),
       androidAllowWhileIdle: true,
       matchDateTimeComponents: DateTimeComponents.time,
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      androidScheduleMode: AndroidScheduleMode.inexact,
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
     );
+  }
+
+   /// Updates a scheduled notification by canceling the old one and scheduling a new one.
+  static Future<void> updateNotification(
+      String documentId, String title, DateTime newScheduledDate) async {
+    int notifId = documentId.hashCode;
+    // Cancel the old notification.
+    await _notificationsPlugin.cancel(notifId);
+    print('Canceled previous notification (ID: $notifId)');
+    // Schedule the new notification.
+    await scheduleNotification(documentId, title, newScheduledDate);
   }
 
   static Future<void> showInstantNotification(String title, String body) async {

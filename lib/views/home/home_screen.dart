@@ -1,248 +1,3 @@
-// // home_screen.dart
-
-// import 'package:dockeeper/core/routes.dart';
-// // import 'package:dockeeper/main.dart';
-// import 'package:dockeeper/models/category_model.dart';
-// import 'package:dockeeper/models/reminder_model.dart';
-// import 'package:dockeeper/services/auth_service.dart';
-// import 'package:dockeeper/services/category_service.dart';
-// import 'package:dockeeper/services/document_service.dart';
-// import 'package:dockeeper/services/reminder_service.dart';
-// import 'package:dockeeper/widgets/custom_bottom_nav_bar.dart';
-// import 'package:flutter/material.dart';
-// import 'package:intl/intl.dart';
-
-// class HomeScreen extends StatefulWidget {
-//   @override
-//   _HomeScreenState createState() => _HomeScreenState();
-// }
-
-// class _HomeScreenState extends State<HomeScreen> {
-//   final TextEditingController searchController = TextEditingController();
-//   int currentTabIndex = 0;
-//   // String userId = "";
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       appBar: AppBar(
-//         automaticallyImplyLeading: false,
-//         title: Row(
-//           children: [
-//             GestureDetector(
-//               onTap: () {
-//                 // Navigator.pushNamed(context, settingsRoute);
-//               },
-//               child: CircleAvatar(
-//                 backgroundColor: Colors.grey.shade300,
-//                 child: Icon(Icons.person, color: Colors.white),
-//               ),
-//             ),
-//             SizedBox(width: 10),
-//             FutureBuilder<String>(
-//               future: AuthService().getUserName(),
-//               builder: (context, snapshot) {
-//                 if (snapshot.connectionState == ConnectionState.waiting) {
-//                   return Text("Loading...", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold));
-//                 } else if (snapshot.hasError) {
-//                   return Text("Error", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold));
-//                 }
-//                 return Text(snapshot.data ?? "User", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold));
-//               },
-//             ),
-//           ],
-//         ),
-//       ),
-//       body: Padding(
-//         padding: const EdgeInsets.all(20.0),
-//         child: SingleChildScrollView(
-//           child: Column(
-//             crossAxisAlignment: CrossAxisAlignment.start,
-//             children: [
-//               TextField(
-//                 controller: searchController,
-//                 decoration: InputDecoration(
-//                   hintText: 'Search',
-//                   prefixIcon: Icon(Icons.search),
-//                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-//                 ),
-//               ),
-//               SizedBox(height: 20),
-//               _buildCategoriesSection(),
-//               SizedBox(height: 20),
-//               _buildUpcomingRemindersSection(),
-//             ],
-//           ),
-//         ),
-//       ),
-//       bottomNavigationBar: CustomBottomNavBar(
-//         currentIndex: currentTabIndex,
-//         onTap: _onBottomNavTap,
-//       ),
-//     );
-//   }
-
-//   Widget _buildCategoriesSection() {
-//     return Container(
-//       decoration: BoxDecoration(
-//         borderRadius: BorderRadius.circular(10),
-//         color: Colors.grey.shade100,
-//       ),
-//       child: Padding(
-//         padding: const EdgeInsets.all(10.0),
-//         child: Column(
-//           crossAxisAlignment: CrossAxisAlignment.start,
-//           children: [
-//             Row(
-//               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-//               children: [
-//                 Text(
-//                   "Categories",
-//                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-//                 ),
-//                 TextButton(
-//                   onPressed: () {
-//                     Navigator.pushNamed(context, categoryRoute);
-//                   },
-//                   child: Text("Show All", style: TextStyle(color: Colors.blue.shade900)),
-//                 ),
-//               ],
-//             ),
-//             FutureBuilder<List<Category>>(
-//               future: CategoryService().fetchAllCategories(),
-//               builder: (context, snapshot) {
-//                 if (snapshot.connectionState == ConnectionState.waiting) {
-//                   return Center(child: CircularProgressIndicator());
-//                 } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-//                   return Padding(
-//                     padding: const EdgeInsets.all(10.0),
-//                     child: Text(
-//                       "No categories found",
-//                       textAlign: TextAlign.center,
-//                       style: TextStyle(color: Colors.grey),
-//                     ),
-//                   );
-//                 }
-
-//                 return Wrap(
-//                   spacing: 16, // Horizontal space between items
-//                   runSpacing: 16, // Vertical space between rows
-//                   children: snapshot.data!
-//                       .take(3)
-//                       .map(
-//                         (category) => GestureDetector(
-//                           onTap: () {
-//                             Navigator.pushNamed(context, categoryRoute);
-//                           },
-//                           child: Column(
-//                             mainAxisSize: MainAxisSize.min,
-//                             children: [
-//                               Icon(Icons.folder, size: 40, color: Colors.blue),
-//                               SizedBox(height: 5),
-//                               Text(
-//                                 category.name,
-//                                 style: TextStyle(fontSize: 14),
-//                                 textAlign: TextAlign.center,
-//                               ),
-//                             ],
-//                           ),
-//                         ),
-//                       )
-//                       .toList(),
-//                 );
-//               },
-//             ),
-//           ],
-//         ),
-//       ),
-//     );
-//   }
-
-
-//   Widget _buildUpcomingRemindersSection() {
-//     return Column(
-//       crossAxisAlignment: CrossAxisAlignment.start,
-//       children: [
-//         Text("Upcoming Reminders", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-//         SizedBox(height: 10),
-//         FutureBuilder<List<Reminder>>(
-//           future: ReminderService().fetchReminders(userId: AuthService().currentUserId), 
-//           builder: (context, snapshot) {
-//             if (snapshot.connectionState == ConnectionState.waiting) {
-//               return Center(child: CircularProgressIndicator());
-//             } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-//               return Padding(
-//                 padding: const EdgeInsets.all(10.0),
-//                 child: Text("No reminders yet", textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)),
-//               );
-//             }
-//             return Column(
-//               children: snapshot.data!
-//                   .map(
-//                     (reminder) => FutureBuilder<String>(
-//                       future: DocumentService().fetchDocumentName(reminder.documentId),
-//                       builder: (context, documentSnapshot) {
-//                         if (documentSnapshot.connectionState == ConnectionState.waiting) {
-//                           return Center(child: CircularProgressIndicator());
-//                         } else if (documentSnapshot.hasError) {
-//                           return ListTile(
-//                             leading: Icon(Icons.insert_drive_file, color: Colors.red),
-//                             title: Text("Error fetching document name"),
-//                           );
-//                         }
-//                         return Card(
-//                           margin: EdgeInsets.only(bottom: 10),
-//                           child: ListTile(
-//                             leading: Icon(Icons.insert_drive_file, color: Colors.blue),
-//                             title: Text(documentSnapshot.data ?? "Unknown Document"),
-//                             subtitle: Text("Expiry: ${DateFormat('yyyy-MM-dd').format(reminder.reminderDate)}"),
-//                             trailing: PopupMenuButton<String>(
-//                               onSelected: (value) {
-//                                 // Handle menu actions
-//                               },
-//                               itemBuilder: (context) => [
-//                                 PopupMenuItem(value: "view", child: Text("View")),
-//                                 PopupMenuItem(value: "edit", child: Text("Edit")),
-//                                 PopupMenuItem(value: "delete", child: Text("Delete")),
-//                               ],
-//                             ),
-//                           ),
-//                         );
-//                       },
-//                     ),
-//                   )
-//                   .toList(),
-//             );
-//           },
-//         ),
-//       ],
-//     );
-//   }
-
-
-//   void _onBottomNavTap(int index) {
-//     setState(() {
-//       currentTabIndex = index;
-//     });
-//     switch (index) {
-//       case 0:
-//         // Navigator.pushNamedAndRemoveUntil(context, homeRoute, (route) => false);
-//         break;
-//       case 1:
-//         // Navigator.pushReplacementNamed(context, reminderRoute);
-//         break;
-//       case 2:
-//         Navigator.pushNamedAndRemoveUntil(context, addDocumentRoute, (route) => false);
-//         break;
-//       case 3:
-//         // Navigator.pushReplacementNamed(context, locationRoute);
-//         break;
-//       case 4:
-//         Navigator.pushNamed(context, settingsRoute);
-//         break;
-//     }
-//   }
-// }
 // import 'package:cloud_firestore/cloud_firestore.dart';
 // import 'package:dockeeper/core/routes.dart';
 // import 'package:dockeeper/models/category_model.dart';
@@ -491,6 +246,7 @@
 //   }
 
 //   /// Widget to display upcoming reminders with section title.
+//   /// **Updated:** Excludes reminders that are completed.
 //   Widget _buildUpcomingRemindersSection() {
 //     return FutureBuilder<List<Reminder>>(
 //       future: ReminderService().fetchReminders(userId: AuthService().currentUserId),
@@ -508,9 +264,11 @@
 //           );
 //         }
 //         final now = DateTime.now();
-//         // Filter reminders to only include those with 30 days or less left.
+//         // Filter reminders to only include those that are not completed and have 30 days or less left.
 //         final reminders = snapshot.data!
-//             .where((reminder) => reminder.reminderDateTime.difference(now).inDays <= 30)
+//             .where((reminder) =>
+//                 !reminder.isCompleted &&
+//                 reminder.reminderDateTime.difference(now).inDays <= 30)
 //             .toList();
 //         if (reminders.isEmpty) {
 //           return const Padding(
@@ -545,7 +303,9 @@
 //                     }
 //                     final docTitle = documentSnapshot.data ?? "Unknown Document";
 //                     final daysLeft = reminder.reminderDateTime.difference(now).inDays;
-//                     final progress = daysLeft > 0 ? (1 - (daysLeft / 30)).clamp(0.0, 1.0) : 1.0;
+//                     final progress = daysLeft > 0
+//                         ? (1 - (daysLeft / 30)).clamp(0.0, 1.0)
+//                         : 1.0;
 //                     return Card(
 //                       margin: const EdgeInsets.only(bottom: 10),
 //                       shape: RoundedRectangleBorder(
@@ -562,7 +322,7 @@
 //                         subtitle: Column(
 //                           crossAxisAlignment: CrossAxisAlignment.start,
 //                           children: [
-//                             Text("Reminder Date: ${DateFormat('yyyy-MM-dd').format(reminder.reminderDateTime)}"),
+//                             Text("Reminder Date: ${DateFormat('yyyy-MM-dd HH:mm').format(reminder.reminderDateTime)}"),
 //                             Text("$daysLeft days left", style: const TextStyle(color: Colors.grey)),
 //                             const SizedBox(height: 6),
 //                             LinearProgressIndicator(value: progress),
@@ -577,25 +337,27 @@
 //                                 arguments: {'documentId': reminder.documentId},
 //                               );
 //                             } else if (value == 'edit') {
-//                                 // Navigate to the edit reminder/document screen.
-//                                 Navigator.pushNamed(
-//                                   context,
-//                                   updateRoute,
-//                                   arguments: {'documentId': reminder.documentId},
-//                                 );
-//                               } else if (value == 'delete') {
-//                                 // Delete the reminder.
-//                                 await FirebaseFirestore.instance.collection('documents').doc(reminder.documentId).delete();
-//                                 final reminderQuerySnapshot = await FirebaseFirestore.instance
-//                                     .collection('reminders')
-//                                     .where('documentId', isEqualTo: reminder.documentId)
-//                                     .get();
-//                                 for (var doc in reminderQuerySnapshot.docs) {
-//                                   await doc.reference.delete();
-//                                 }
-//                                 // Refresh UI.
-//                                 setState(() {});
+//                               Navigator.pushNamed(
+//                                 context,
+//                                 updateRoute,
+//                                 arguments: {'documentId': reminder.documentId},
+//                               );
+//                             } else if (value == 'delete') {
+//                               // Delete the reminder.
+//                               await FirebaseFirestore.instance
+//                                   .collection('documents')
+//                                   .doc(reminder.documentId)
+//                                   .delete();
+//                               final reminderQuerySnapshot = await FirebaseFirestore.instance
+//                                   .collection('reminders')
+//                                   .where('documentId', isEqualTo: reminder.documentId)
+//                                   .get();
+//                               for (var doc in reminderQuerySnapshot.docs) {
+//                                 await doc.reference.delete();
 //                               }
+//                               // Refresh UI.
+//                               setState(() {});
+//                             }
 //                           },
 //                           itemBuilder: (context) => const [
 //                             PopupMenuItem(value: 'view', child: Text("View")),
@@ -622,7 +384,9 @@
 //     );
 //   }
 
-//   // int currentTabIndex = 0;
+//   // final TextEditingController _searchController = TextEditingController();
+//   // int _currentTabIndex = 0;
+//   // String _searchQuery = "";
 
 //   void _onBottomNavTap(int index) {
 //     setState(() {
@@ -649,6 +413,95 @@
 //     }
 //   }
 
+//   /// Builds the AppBar for the HomeScreen.
+//   PreferredSizeWidget buildAppBar() {
+//     return AppBar(
+//       automaticallyImplyLeading: false,
+//       title: Row(
+//         children: [
+//           GestureDetector(
+//             onTap: () {
+//               // Optionally navigate to a profile screen.
+//             },
+//             child: CircleAvatar(
+//               backgroundColor: Colors.grey.shade300,
+//               child: Icon(Icons.person, color: Colors.white),
+//             ),
+//           ),
+//           const SizedBox(width: 10),
+//           FutureBuilder<String>(
+//             future: AuthService().getUserName(),
+//             builder: (context, snapshot) {
+//               if (snapshot.connectionState == ConnectionState.waiting) {
+//                 return const Text("Loading...",
+//                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold));
+//               } else if (snapshot.hasError) {
+//                 return const Text("Error",
+//                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold));
+//               }
+//               return Text(snapshot.data ?? "User",
+//                   style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold));
+//             },
+//           ),
+//         ],
+//       ),
+//     );
+//   }
+
+//   /// Widget to display search results.
+//   Widget buildSearchResults() {
+//     return StreamBuilder<QuerySnapshot>(
+//       stream: FirebaseFirestore.instance
+//           .collection('documents')
+//           .where('userId', isEqualTo: AuthService().currentUserId)
+//           .where('title', isGreaterThanOrEqualTo: searchQuery)
+//           .where('title', isLessThanOrEqualTo: searchQuery + '\uf8ff')
+//           .snapshots(),
+//       builder: (context, snapshot) {
+//         if (snapshot.connectionState == ConnectionState.waiting) {
+//           return const Center(child: CircularProgressIndicator());
+//         }
+//         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+//           return const Padding(
+//             padding: EdgeInsets.all(8.0),
+//             child: Text("No matching documents found."),
+//           );
+//         }
+//         final docs = snapshot.data!.docs;
+//         return Column(
+//           crossAxisAlignment: CrossAxisAlignment.start,
+//           children: [
+//             const Text("Search Results",
+//                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+//             const SizedBox(height: 10),
+//             ListView.builder(
+//               shrinkWrap: true,
+//               physics: const NeverScrollableScrollPhysics(),
+//               itemCount: docs.length,
+//               itemBuilder: (context, index) {
+//                 final docData = docs[index].data() as Map<String, dynamic>;
+//                 return Card(
+//                   margin: const EdgeInsets.symmetric(vertical: 6),
+//                   child: ListTile(
+//                     title: Text(docData['title'] ?? 'Untitled'),
+//                     subtitle: Text(docData['description'] ?? ''),
+//                     onTap: () {
+//                       Navigator.pushNamed(
+//                         context,
+//                         viewRoute,
+//                         arguments: {'documentId': docs[index].id},
+//                       );
+//                     },
+//                   ),
+//                 );
+//               },
+//             ),
+//           ],
+//         );
+//       },
+//     );
+//   }
+
 //   @override
 //   Widget build(BuildContext context) {
 //     return Scaffold(
@@ -659,7 +512,7 @@
 //           child: Column(
 //             crossAxisAlignment: CrossAxisAlignment.start,
 //             children: [
-//               // Search bar
+//               // Search bar.
 //               TextField(
 //                 controller: searchController,
 //                 decoration: InputDecoration(
@@ -689,6 +542,8 @@
 //     );
 //   }
 // }
+
+import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dockeeper/core/routes.dart';
 import 'package:dockeeper/models/category_model.dart';
@@ -700,6 +555,7 @@ import 'package:dockeeper/services/reminder_service.dart';
 import 'package:dockeeper/widgets/custom_bottom_nav_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -710,10 +566,12 @@ class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController searchController = TextEditingController();
   int currentTabIndex = 0;
   String searchQuery = "";
+  File? _profileImage;
 
   @override
   void initState() {
     super.initState();
+    _loadProfilePicture();
     // Listen for changes in the search field.
     searchController.addListener(() {
       setState(() {
@@ -722,25 +580,39 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  /// Loads the profile picture for the current user from SharedPreferences.
+  Future<void> _loadProfilePicture() async {
+    final prefs = await SharedPreferences.getInstance();
+    String key = 'profile_picture_${AuthService().currentUserId}';
+    final profilePath = prefs.getString(key);
+    if (profilePath != null && profilePath.isNotEmpty) {
+      setState(() {
+        _profileImage = File(profilePath);
+      });
+    }
+  }
+
   @override
   void dispose() {
     searchController.dispose();
     super.dispose();
   }
 
-  /// Builds the AppBar with a profile icon and user's name.
-  PreferredSizeWidget _buildAppBar() {
+  /// Builds the AppBar with a profile picture (if available) and the user's name.
+  PreferredSizeWidget buildAppBar() {
     return AppBar(
       automaticallyImplyLeading: false,
       title: Row(
         children: [
+          // Profile picture section.
           GestureDetector(
             onTap: () {
               // Optionally navigate to a profile screen.
             },
             child: CircleAvatar(
               backgroundColor: Colors.grey.shade300,
-              child: Icon(Icons.person, color: Colors.white),
+              backgroundImage: _profileImage != null ? FileImage(_profileImage!) : null,
+              child: _profileImage == null ? Icon(Icons.person, color: Colors.white) : null,
             ),
           ),
           const SizedBox(width: 10),
@@ -748,14 +620,20 @@ class _HomeScreenState extends State<HomeScreen> {
             future: AuthService().getUserName(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Text("Loading...",
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold));
+                return const Text(
+                  "Loading...",
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                );
               } else if (snapshot.hasError) {
-                return const Text("Error",
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold));
+                return const Text(
+                  "Error",
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                );
               }
-              return Text(snapshot.data ?? "User",
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold));
+              return Text(
+                snapshot.data ?? "User",
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              );
             },
           ),
         ],
@@ -763,7 +641,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  /// Widget to display search results when [searchQuery] is not empty.
+  /// Widget to display search results based on [searchQuery].
   Widget _buildSearchResults() {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
@@ -786,8 +664,10 @@ class _HomeScreenState extends State<HomeScreen> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text("Search Results",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const Text(
+              "Search Results",
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 10),
             ListView.builder(
               shrinkWrap: true,
@@ -873,8 +753,10 @@ class _HomeScreenState extends State<HomeScreen> {
                     onPressed: () {
                       Navigator.pushNamed(context, categoryRoute);
                     },
-                    child: const Text("Show All",
-                        style: TextStyle(color: Colors.blue, fontSize: 16)),
+                    child: const Text(
+                      "Show All",
+                      style: TextStyle(color: Colors.blue, fontSize: 16),
+                    ),
                   ),
                 ],
               ),
@@ -889,7 +771,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
                   itemCount: categories.length,
-                  separatorBuilder: (context, index) => const SizedBox(width: 16),
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(width: 16),
                   itemBuilder: (context, index) {
                     final category = categories[index];
                     return GestureDetector(
@@ -916,12 +799,14 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                               ],
                             ),
-                            child: const Icon(Icons.folder, size: 40, color: Colors.blue),
+                            child: const Icon(Icons.folder,
+                                size: 40, color: Colors.blue),
                           ),
                           const SizedBox(height: 8),
                           Text(
                             category.name,
-                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                            style: const TextStyle(
+                                fontSize: 16, fontWeight: FontWeight.bold),
                           ),
                         ],
                       ),
@@ -936,11 +821,11 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  /// Widget to display upcoming reminders with section title.
-  /// **Updated:** Excludes reminders that are completed.
+  /// Widget to display upcoming reminders (only those not completed and within 30 days).
   Widget _buildUpcomingRemindersSection() {
     return FutureBuilder<List<Reminder>>(
-      future: ReminderService().fetchReminders(userId: AuthService().currentUserId),
+      future:
+          ReminderService().fetchReminders(userId: AuthService().currentUserId),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -955,7 +840,6 @@ class _HomeScreenState extends State<HomeScreen> {
           );
         }
         final now = DateTime.now();
-        // Filter reminders to only include those that are not completed and have 30 days or less left.
         final reminders = snapshot.data!
             .where((reminder) =>
                 !reminder.isCompleted &&
@@ -982,18 +866,23 @@ class _HomeScreenState extends State<HomeScreen> {
             Column(
               children: reminders.map((reminder) {
                 return FutureBuilder<String>(
-                  future: DocumentService().fetchDocumentName(reminder.documentId),
+                  future: DocumentService()
+                      .fetchDocumentName(reminder.documentId),
                   builder: (context, documentSnapshot) {
-                    if (documentSnapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(child: CircularProgressIndicator());
+                    if (documentSnapshot.connectionState ==
+                        ConnectionState.waiting) {
+                      return const Center(
+                          child: CircularProgressIndicator());
                     } else if (documentSnapshot.hasError) {
                       return const ListTile(
                         leading: Icon(Icons.insert_drive_file, color: Colors.red),
                         title: Text("Error fetching document name"),
                       );
                     }
-                    final docTitle = documentSnapshot.data ?? "Unknown Document";
-                    final daysLeft = reminder.reminderDateTime.difference(now).inDays;
+                    final docTitle =
+                        documentSnapshot.data ?? "Unknown Document";
+                    final daysLeft =
+                        reminder.reminderDateTime.difference(now).inDays;
                     final progress = daysLeft > 0
                         ? (1 - (daysLeft / 30)).clamp(0.0, 1.0)
                         : 1.0;
@@ -1005,16 +894,19 @@ class _HomeScreenState extends State<HomeScreen> {
                       elevation: 3,
                       child: ListTile(
                         contentPadding: const EdgeInsets.all(12),
-                        leading: const Icon(Icons.insert_drive_file, color: Colors.blue, size: 40),
+                        leading: const Icon(Icons.insert_drive_file,
+                            color: Colors.blue, size: 40),
                         title: Text(
                           docTitle,
-                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                          style: const TextStyle(
+                              fontSize: 16, fontWeight: FontWeight.bold),
                         ),
                         subtitle: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text("Reminder Date: ${DateFormat('yyyy-MM-dd HH:mm').format(reminder.reminderDateTime)}"),
-                            Text("$daysLeft days left", style: const TextStyle(color: Colors.grey)),
+                            Text("$daysLeft days left",
+                                style: const TextStyle(color: Colors.grey)),
                             const SizedBox(height: 6),
                             LinearProgressIndicator(value: progress),
                           ],
@@ -1075,48 +967,21 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // final TextEditingController _searchController = TextEditingController();
-  // int _currentTabIndex = 0;
-  // String _searchQuery = "";
-
-  void _onBottomNavTap(int index) {
-    setState(() {
-      currentTabIndex = index;
-    });
-    switch (index) {
-      case 0:
-        Navigator.pushReplacementNamed(context, homeRoute);
-        break;
-      case 1:
-        Navigator.pushReplacementNamed(context, reminderRoute);
-        break;
-      case 2:
-        Navigator.pushNamedAndRemoveUntil(context, addDocumentRoute, (route) => false);
-        break;
-      case 3:
-        Navigator.pushNamedAndRemoveUntil(context, locationRoute, (route) => false);
-        break;
-      case 4:
-        Navigator.pushReplacementNamed(context, settingsRoute);
-        break;
-      default:
-        break;
-    }
-  }
-
-  /// Builds the AppBar for the HomeScreen.
-  PreferredSizeWidget buildAppBar() {
+  /// Builds the AppBar for HomeScreen.
+  PreferredSizeWidget _buildAppBar() {
     return AppBar(
       automaticallyImplyLeading: false,
       title: Row(
         children: [
+          // Profile picture section: If a profile picture is found in SharedPreferences (for current user), show it; otherwise, show default icon.
           GestureDetector(
             onTap: () {
               // Optionally navigate to a profile screen.
             },
             child: CircleAvatar(
               backgroundColor: Colors.grey.shade300,
-              child: Icon(Icons.person, color: Colors.white),
+              backgroundImage: _profileImage != null ? FileImage(_profileImage!) : null,
+              child: _profileImage == null ? Icon(Icons.person, color: Colors.white) : null,
             ),
           ),
           const SizedBox(width: 10),
@@ -1216,7 +1081,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SizedBox(height: 20),
               if (searchQuery.isNotEmpty)
-                _buildSearchResults()
+                buildSearchResults()
               else ...[
                 _buildCategoriesSection(),
                 const SizedBox(height: 20),
@@ -1232,5 +1097,29 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-}
 
+  void _onBottomNavTap(int index) {
+    setState(() {
+      currentTabIndex = index;
+    });
+    switch (index) {
+      case 0:
+        Navigator.pushReplacementNamed(context, homeRoute);
+        break;
+      case 1:
+        Navigator.pushReplacementNamed(context, reminderRoute);
+        break;
+      case 2:
+        Navigator.pushNamedAndRemoveUntil(context, addDocumentRoute, (route) => false);
+        break;
+      case 3:
+        Navigator.pushNamedAndRemoveUntil(context, locationRoute, (route) => false);
+        break;
+      case 4:
+        Navigator.pushReplacementNamed(context, settingsRoute);
+        break;
+      default:
+        break;
+    }
+  }
+}

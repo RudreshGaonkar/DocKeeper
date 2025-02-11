@@ -73,11 +73,11 @@ void main() async {
   // await AndroidAlarmManager.initialize();
 
   await NotificationService.initialize();
-  DateTime now = DateTime.now();
-  DateTime futureTime = now.add(Duration(seconds: 30));
-  NotificationService.scheduleNotification("123456", "Test Reminder", futureTime);
-  NotificationService.scheduleNotification("Test","This works",DateTime.now().add(Duration(seconds: 5)));
-  NotificationService.showInstantNotification("test",'$futureTime');
+  // DateTime now = DateTime.now();
+  // DateTime futureTime = now.add(Duration(seconds: 30));
+  // NotificationService.scheduleNotification("123456", "Test Reminder", futureTime);
+  // NotificationService.scheduleNotification("Test","This works",DateTime.now().add(Duration(seconds: 5)));
+  // NotificationService.showInstantNotification("test",'$futureTime');
 
   
   runApp(MyApp());
@@ -104,7 +104,6 @@ class MyApp extends StatelessWidget {
         settingsRoute: (context) => SettingsScreen(),
         reminderRoute: (context) => ReminderScreen(),
         locationRoute: (context) => LocationScreen(),
-        // For updateRoute we now handle it in onGenerateRoute.
         viewRoute: (context) {
           final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
           if (args != null && args.containsKey('documentId')) {
