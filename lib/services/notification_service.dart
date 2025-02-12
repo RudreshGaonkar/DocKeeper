@@ -52,6 +52,15 @@ class NotificationService {
     await scheduleNotification(documentId, title, newScheduledDate);
   }
 
+  static Future<void> cancelScheduledNotification(String documentId) async {
+    int notifId = documentId.hashCode;
+    try {
+      await _notificationsPlugin.cancel(notifId);
+    } catch (e) {
+      print("Error canceling notification: $e");
+    }
+  }
+
   static Future<void> showInstantNotification(String title, String body) async {
     const NotificationDetails details = NotificationDetails(
       android: AndroidNotificationDetails(

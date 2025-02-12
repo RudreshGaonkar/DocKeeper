@@ -1,3 +1,5 @@
+// import 'dart:async';
+// import 'dart:io';
 // import 'package:cloud_firestore/cloud_firestore.dart';
 // import 'package:dockeeper/core/routes.dart';
 // import 'package:dockeeper/models/category_model.dart';
@@ -9,6 +11,7 @@
 // import 'package:dockeeper/widgets/custom_bottom_nav_bar.dart';
 // import 'package:flutter/material.dart';
 // import 'package:intl/intl.dart';
+// import 'package:shared_preferences/shared_preferences.dart';
 
 // class HomeScreen extends StatefulWidget {
 //   @override
@@ -17,39 +20,72 @@
 
 // class _HomeScreenState extends State<HomeScreen> {
 //   final TextEditingController searchController = TextEditingController();
+//   Timer? _debounce;
+//   String activeSearchQuery = "";
 //   int currentTabIndex = 0;
 //   String searchQuery = "";
+//   File? _profileImage;
 
 //   @override
 //   void initState() {
 //     super.initState();
-//     // Listen for changes in the search field.
-//     searchController.addListener(() {
-//       setState(() {
-//         searchQuery = searchController.text.trim();
+//     _loadProfilePicture();
+//     searchController.addListener(_onSearchChanged);
+//   }
+
+//   void _onSearchChanged() {
+//     if (_debounce?.isActive ?? false) _debounce!.cancel();
+//       _debounce = Timer(const Duration(milliseconds: 300), () {
+//         setState(() {
+//           activeSearchQuery = searchController.text.trim();
+//           print("Active search query: $activeSearchQuery");
+//         });
 //       });
-//     });
 //   }
 
 //   @override
 //   void dispose() {
+//     searchController.removeListener(_onSearchChanged);
+//     _debounce?.cancel();
 //     searchController.dispose();
 //     super.dispose();
 //   }
 
-//   /// Builds the AppBar with a profile icon and user's name.
-//   PreferredSizeWidget _buildAppBar() {
+//   /// Loads the profile picture for the current user from SharedPreferences.
+//   Future<void> _loadProfilePicture() async {
+//     final prefs = await SharedPreferences.getInstance();
+//     String key = 'profile_picture_${AuthService().currentUserId}';
+//     final profilePath = prefs.getString(key);
+//     if (profilePath != null && profilePath.isNotEmpty) {
+//       setState(() {
+//         _profileImage = File(profilePath);
+//       });
+//     }
+//   }
+
+//   // @override
+//   // void dispose() {
+//   //   searchController.removeListener(_onSearchChanged);
+//   //   _debounce?.cancel();
+//   //   searchController.dispose();
+//   //   super.dispose();
+//   // }
+
+//   /// Builds the AppBar with a profile picture (if available) and the user's name.
+//   PreferredSizeWidget buildAppBar() {
 //     return AppBar(
 //       automaticallyImplyLeading: false,
 //       title: Row(
 //         children: [
+//           // Profile picture section.
 //           GestureDetector(
 //             onTap: () {
 //               // Optionally navigate to a profile screen.
 //             },
 //             child: CircleAvatar(
 //               backgroundColor: Colors.grey.shade300,
-//               child: Icon(Icons.person, color: Colors.white),
+//               backgroundImage: _profileImage != null ? FileImage(_profileImage!) : null,
+//               child: _profileImage == null ? Icon(Icons.person, color: Colors.white) : null,
 //             ),
 //           ),
 //           const SizedBox(width: 10),
@@ -57,14 +93,20 @@
 //             future: AuthService().getUserName(),
 //             builder: (context, snapshot) {
 //               if (snapshot.connectionState == ConnectionState.waiting) {
-//                 return const Text("Loading...",
-//                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold));
+//                 return const Text(
+//                   "Loading...",
+//                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+//                 );
 //               } else if (snapshot.hasError) {
-//                 return const Text("Error",
-//                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold));
+//                 return const Text(
+//                   "Error",
+//                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+//                 );
 //               }
-//               return Text(snapshot.data ?? "User",
-//                   style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold));
+//               return Text(
+//                 snapshot.data ?? "User",
+//                 style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+//               );
 //             },
 //           ),
 //         ],
@@ -72,14 +114,15 @@
 //     );
 //   }
 
-//   /// Widget to display search results when [searchQuery] is not empty.
+//   /// Widget to display search results using the active search query.
 //   Widget _buildSearchResults() {
 //     return StreamBuilder<QuerySnapshot>(
 //       stream: FirebaseFirestore.instance
 //           .collection('documents')
 //           .where('userId', isEqualTo: AuthService().currentUserId)
-//           .where('title', isGreaterThanOrEqualTo: searchQuery)
-//           .where('title', isLessThanOrEqualTo: searchQuery + '\uf8ff')
+//           .orderBy('title')
+//           .startAt(["test 51"])
+//           .endAt(["test 51" + '\uf8ff'])
 //           .snapshots(),
 //       builder: (context, snapshot) {
 //         if (snapshot.connectionState == ConnectionState.waiting) {
@@ -91,12 +134,17 @@
 //             child: Text("No matching documents found."),
 //           );
 //         }
+//         if (snapshot.hasError) {
+//           return Text("Error: ${snapshot.error}");
+//         }
 //         final docs = snapshot.data!.docs;
 //         return Column(
 //           crossAxisAlignment: CrossAxisAlignment.start,
 //           children: [
-//             const Text("Search Results",
-//                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+//             const Text(
+//               "Search Results",
+//               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+//             ),
 //             const SizedBox(height: 10),
 //             ListView.builder(
 //               shrinkWrap: true,
@@ -125,6 +173,7 @@
 //       },
 //     );
 //   }
+
 
 //   /// Widget to display categories in a horizontal scroll view.
 //   Widget _buildCategoriesSection() {
@@ -182,8 +231,10 @@
 //                     onPressed: () {
 //                       Navigator.pushNamed(context, categoryRoute);
 //                     },
-//                     child: const Text("Show All",
-//                         style: TextStyle(color: Colors.blue, fontSize: 16)),
+//                     child: const Text(
+//                       "Show All",
+//                       style: TextStyle(color: Colors.blue, fontSize: 16),
+//                     ),
 //                   ),
 //                 ],
 //               ),
@@ -198,7 +249,8 @@
 //                 child: ListView.separated(
 //                   scrollDirection: Axis.horizontal,
 //                   itemCount: categories.length,
-//                   separatorBuilder: (context, index) => const SizedBox(width: 16),
+//                   separatorBuilder: (context, index) =>
+//                       const SizedBox(width: 16),
 //                   itemBuilder: (context, index) {
 //                     final category = categories[index];
 //                     return GestureDetector(
@@ -225,12 +277,14 @@
 //                                 ),
 //                               ],
 //                             ),
-//                             child: const Icon(Icons.folder, size: 40, color: Colors.blue),
+//                             child: const Icon(Icons.folder,
+//                                 size: 40, color: Colors.blue),
 //                           ),
 //                           const SizedBox(height: 8),
 //                           Text(
 //                             category.name,
-//                             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+//                             style: const TextStyle(
+//                                 fontSize: 16, fontWeight: FontWeight.bold),
 //                           ),
 //                         ],
 //                       ),
@@ -245,11 +299,11 @@
 //     );
 //   }
 
-//   /// Widget to display upcoming reminders with section title.
-//   /// **Updated:** Excludes reminders that are completed.
+//   /// Widget to display upcoming reminders (only those not completed and within 30 days).
 //   Widget _buildUpcomingRemindersSection() {
 //     return FutureBuilder<List<Reminder>>(
-//       future: ReminderService().fetchReminders(userId: AuthService().currentUserId),
+//       future:
+//           ReminderService().fetchReminders(userId: AuthService().currentUserId),
 //       builder: (context, snapshot) {
 //         if (snapshot.connectionState == ConnectionState.waiting) {
 //           return const Center(child: CircularProgressIndicator());
@@ -264,7 +318,6 @@
 //           );
 //         }
 //         final now = DateTime.now();
-//         // Filter reminders to only include those that are not completed and have 30 days or less left.
 //         final reminders = snapshot.data!
 //             .where((reminder) =>
 //                 !reminder.isCompleted &&
@@ -291,18 +344,23 @@
 //             Column(
 //               children: reminders.map((reminder) {
 //                 return FutureBuilder<String>(
-//                   future: DocumentService().fetchDocumentName(reminder.documentId),
+//                   future: DocumentService()
+//                       .fetchDocumentName(reminder.documentId),
 //                   builder: (context, documentSnapshot) {
-//                     if (documentSnapshot.connectionState == ConnectionState.waiting) {
-//                       return const Center(child: CircularProgressIndicator());
+//                     if (documentSnapshot.connectionState ==
+//                         ConnectionState.waiting) {
+//                       return const Center(
+//                           child: CircularProgressIndicator());
 //                     } else if (documentSnapshot.hasError) {
 //                       return const ListTile(
 //                         leading: Icon(Icons.insert_drive_file, color: Colors.red),
 //                         title: Text("Error fetching document name"),
 //                       );
 //                     }
-//                     final docTitle = documentSnapshot.data ?? "Unknown Document";
-//                     final daysLeft = reminder.reminderDateTime.difference(now).inDays;
+//                     final docTitle =
+//                         documentSnapshot.data ?? "Unknown Document";
+//                     final daysLeft =
+//                         reminder.reminderDateTime.difference(now).inDays;
 //                     final progress = daysLeft > 0
 //                         ? (1 - (daysLeft / 30)).clamp(0.0, 1.0)
 //                         : 1.0;
@@ -314,16 +372,19 @@
 //                       elevation: 3,
 //                       child: ListTile(
 //                         contentPadding: const EdgeInsets.all(12),
-//                         leading: const Icon(Icons.insert_drive_file, color: Colors.blue, size: 40),
+//                         leading: const Icon(Icons.insert_drive_file,
+//                             color: Colors.blue, size: 40),
 //                         title: Text(
 //                           docTitle,
-//                           style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+//                           style: const TextStyle(
+//                               fontSize: 16, fontWeight: FontWeight.bold),
 //                         ),
 //                         subtitle: Column(
 //                           crossAxisAlignment: CrossAxisAlignment.start,
 //                           children: [
 //                             Text("Reminder Date: ${DateFormat('yyyy-MM-dd HH:mm').format(reminder.reminderDateTime)}"),
-//                             Text("$daysLeft days left", style: const TextStyle(color: Colors.grey)),
+//                             Text("$daysLeft days left",
+//                                 style: const TextStyle(color: Colors.grey)),
 //                             const SizedBox(height: 6),
 //                             LinearProgressIndicator(value: progress),
 //                           ],
@@ -384,9 +445,136 @@
 //     );
 //   }
 
-//   // final TextEditingController _searchController = TextEditingController();
-//   // int _currentTabIndex = 0;
-//   // String _searchQuery = "";
+//   /// Builds the AppBar for HomeScreen.
+//   PreferredSizeWidget _buildAppBar() {
+//     return AppBar(
+//       automaticallyImplyLeading: false,
+//       title: Row(
+//         children: [
+//           // Profile picture section: If a profile picture is found in SharedPreferences (for current user), show it; otherwise, show default icon.
+//           GestureDetector(
+//             onTap: () {
+//               // Optionally navigate to a profile screen.
+//             },
+//             child: CircleAvatar(
+//               backgroundColor: Colors.grey.shade300,
+//               backgroundImage: _profileImage != null ? FileImage(_profileImage!) : null,
+//               child: _profileImage == null ? Icon(Icons.person, color: Colors.white) : null,
+//             ),
+//           ),
+//           const SizedBox(width: 10),
+//           FutureBuilder<String>(
+//             future: AuthService().getUserName(),
+//             builder: (context, snapshot) {
+//               if (snapshot.connectionState == ConnectionState.waiting) {
+//                 return const Text("Loading...",
+//                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold));
+//               } else if (snapshot.hasError) {
+//                 return const Text("Error",
+//                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold));
+//               }
+//               return Text(snapshot.data ?? "User",
+//                   style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold));
+//             },
+//           ),
+//         ],
+//       ),
+//     );
+//   }
+
+//   /// Widget to display search results.
+//   // Widget buildSearchResults() {
+//   //   return StreamBuilder<QuerySnapshot>(
+//   //     stream: FirebaseFirestore.instance
+//   //         .collection('documents')
+//   //         .where('userId', isEqualTo: AuthService().currentUserId)
+//   //         .where('title', isGreaterThanOrEqualTo: searchQuery)
+//   //         .where('title', isLessThanOrEqualTo: searchQuery + '\uf8ff')
+//   //         .snapshots(),
+//   //     builder: (context, snapshot) {
+//   //       if (snapshot.connectionState == ConnectionState.waiting) {
+//   //         return const Center(child: CircularProgressIndicator());
+//   //       }
+//   //       if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+//   //         return const Padding(
+//   //           padding: EdgeInsets.all(8.0),
+//   //           child: Text("No matching documents found."),
+//   //         );
+//   //       }
+//   //       final docs = snapshot.data!.docs;
+//   //       return Column(
+//   //         crossAxisAlignment: CrossAxisAlignment.start,
+//   //         children: [
+//   //           const Text("Search Results",
+//   //               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+//   //           const SizedBox(height: 10),
+//   //           ListView.builder(
+//   //             shrinkWrap: true,
+//   //             physics: const NeverScrollableScrollPhysics(),
+//   //             itemCount: docs.length,
+//   //             itemBuilder: (context, index) {
+//   //               final docData = docs[index].data() as Map<String, dynamic>;
+//   //               return Card(
+//   //                 margin: const EdgeInsets.symmetric(vertical: 6),
+//   //                 child: ListTile(
+//   //                   title: Text(docData['title'] ?? 'Untitled'),
+//   //                   subtitle: Text(docData['description'] ?? ''),
+//   //                   onTap: () {
+//   //                     Navigator.pushNamed(
+//   //                       context,
+//   //                       viewRoute,
+//   //                       arguments: {'documentId': docs[index].id},
+//   //                     );
+//   //                   },
+//   //                 ),
+//   //               );
+//   //             },
+//   //           ),
+//   //         ],
+//   //       );
+//   //     },
+//   //   );
+//   // }
+
+//  @override
+//   Widget build(BuildContext context) {
+//     return Scaffold(
+//       appBar: _buildAppBar(),
+//       body: Padding(
+//         padding: const EdgeInsets.all(20.0),
+//         child: SingleChildScrollView(
+//           child: Column(
+//             crossAxisAlignment: CrossAxisAlignment.start,
+//             children: [
+//               // Search bar.
+//               TextField(
+//                 controller: searchController,
+//                 decoration: InputDecoration(
+//                   hintText: 'Search documents...',
+//                   prefixIcon: const Icon(Icons.search),
+//                   border: OutlineInputBorder(
+//                     borderRadius: BorderRadius.circular(10),
+//                   ),
+//                 ),
+//               ),
+//               const SizedBox(height: 20),
+//               if (activeSearchQuery.isNotEmpty)
+//                 _buildSearchResults()
+//               else ...[
+//                 _buildCategoriesSection(),
+//                 const SizedBox(height: 20),
+//                 _buildUpcomingRemindersSection(),
+//               ],
+//             ],
+//           ),
+//         ),
+//       ),
+//       bottomNavigationBar: CustomBottomNavBar(
+//         currentIndex: currentTabIndex,
+//         onTap: _onBottomNavTap,
+//       ),
+//     );
+//   }
 
 //   void _onBottomNavTap(int index) {
 //     setState(() {
@@ -412,137 +600,8 @@
 //         break;
 //     }
 //   }
-
-//   /// Builds the AppBar for the HomeScreen.
-//   PreferredSizeWidget buildAppBar() {
-//     return AppBar(
-//       automaticallyImplyLeading: false,
-//       title: Row(
-//         children: [
-//           GestureDetector(
-//             onTap: () {
-//               // Optionally navigate to a profile screen.
-//             },
-//             child: CircleAvatar(
-//               backgroundColor: Colors.grey.shade300,
-//               child: Icon(Icons.person, color: Colors.white),
-//             ),
-//           ),
-//           const SizedBox(width: 10),
-//           FutureBuilder<String>(
-//             future: AuthService().getUserName(),
-//             builder: (context, snapshot) {
-//               if (snapshot.connectionState == ConnectionState.waiting) {
-//                 return const Text("Loading...",
-//                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold));
-//               } else if (snapshot.hasError) {
-//                 return const Text("Error",
-//                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold));
-//               }
-//               return Text(snapshot.data ?? "User",
-//                   style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold));
-//             },
-//           ),
-//         ],
-//       ),
-//     );
-//   }
-
-//   /// Widget to display search results.
-//   Widget buildSearchResults() {
-//     return StreamBuilder<QuerySnapshot>(
-//       stream: FirebaseFirestore.instance
-//           .collection('documents')
-//           .where('userId', isEqualTo: AuthService().currentUserId)
-//           .where('title', isGreaterThanOrEqualTo: searchQuery)
-//           .where('title', isLessThanOrEqualTo: searchQuery + '\uf8ff')
-//           .snapshots(),
-//       builder: (context, snapshot) {
-//         if (snapshot.connectionState == ConnectionState.waiting) {
-//           return const Center(child: CircularProgressIndicator());
-//         }
-//         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-//           return const Padding(
-//             padding: EdgeInsets.all(8.0),
-//             child: Text("No matching documents found."),
-//           );
-//         }
-//         final docs = snapshot.data!.docs;
-//         return Column(
-//           crossAxisAlignment: CrossAxisAlignment.start,
-//           children: [
-//             const Text("Search Results",
-//                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-//             const SizedBox(height: 10),
-//             ListView.builder(
-//               shrinkWrap: true,
-//               physics: const NeverScrollableScrollPhysics(),
-//               itemCount: docs.length,
-//               itemBuilder: (context, index) {
-//                 final docData = docs[index].data() as Map<String, dynamic>;
-//                 return Card(
-//                   margin: const EdgeInsets.symmetric(vertical: 6),
-//                   child: ListTile(
-//                     title: Text(docData['title'] ?? 'Untitled'),
-//                     subtitle: Text(docData['description'] ?? ''),
-//                     onTap: () {
-//                       Navigator.pushNamed(
-//                         context,
-//                         viewRoute,
-//                         arguments: {'documentId': docs[index].id},
-//                       );
-//                     },
-//                   ),
-//                 );
-//               },
-//             ),
-//           ],
-//         );
-//       },
-//     );
-//   }
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       appBar: _buildAppBar(),
-//       body: Padding(
-//         padding: const EdgeInsets.all(20.0),
-//         child: SingleChildScrollView(
-//           child: Column(
-//             crossAxisAlignment: CrossAxisAlignment.start,
-//             children: [
-//               // Search bar.
-//               TextField(
-//                 controller: searchController,
-//                 decoration: InputDecoration(
-//                   hintText: 'Search documents...',
-//                   prefixIcon: const Icon(Icons.search),
-//                   border: OutlineInputBorder(
-//                     borderRadius: BorderRadius.circular(10),
-//                   ),
-//                 ),
-//               ),
-//               const SizedBox(height: 20),
-//               if (searchQuery.isNotEmpty)
-//                 _buildSearchResults()
-//               else ...[
-//                 _buildCategoriesSection(),
-//                 const SizedBox(height: 20),
-//                 _buildUpcomingRemindersSection(),
-//               ],
-//             ],
-//           ),
-//         ),
-//       ),
-//       bottomNavigationBar: CustomBottomNavBar(
-//         currentIndex: currentTabIndex,
-//         onTap: _onBottomNavTap,
-//       ),
-//     );
-//   }
 // }
-
+import 'dart:async';
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dockeeper/core/routes.dart';
@@ -551,6 +610,7 @@ import 'package:dockeeper/models/reminder_model.dart';
 import 'package:dockeeper/services/auth_service.dart';
 import 'package:dockeeper/services/category_service.dart';
 import 'package:dockeeper/services/document_service.dart';
+import 'package:dockeeper/services/notification_service.dart';
 import 'package:dockeeper/services/reminder_service.dart';
 import 'package:dockeeper/widgets/custom_bottom_nav_bar.dart';
 import 'package:flutter/material.dart';
@@ -564,20 +624,139 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController searchController = TextEditingController();
+  Timer? _debounce;
+  String activeSearchQuery = "";
   int currentTabIndex = 0;
-  String searchQuery = "";
   File? _profileImage;
+  OverlayEntry? _overlayEntry;
+  // GlobalKey to get the position/size of the search field.
+  final GlobalKey _searchFieldKey = GlobalKey();
 
   @override
   void initState() {
     super.initState();
     _loadProfilePicture();
-    // Listen for changes in the search field.
-    searchController.addListener(() {
+    searchController.addListener(_onSearchChanged);
+  }
+
+  void _onSearchChanged() {
+    if (_debounce?.isActive ?? false) _debounce!.cancel();
+    _debounce = Timer(const Duration(milliseconds: 300), () {
       setState(() {
-        searchQuery = searchController.text.trim();
+        activeSearchQuery = searchController.text.trim();
+        print("Active search query: $activeSearchQuery");
       });
+      // If there's a query, show the overlay; otherwise, remove it.
+      if (activeSearchQuery.isNotEmpty) {
+        _showOverlay();
+      } else {
+        _removeOverlay();
+      }
     });
+  }
+
+  void _showOverlay() {
+    _removeOverlay(); // Remove any existing overlay.
+    _overlayEntry = _createOverlayEntry();
+    Overlay.of(context)?.insert(_overlayEntry!);
+  }
+
+  void _removeOverlay() {
+    _overlayEntry?.remove();
+    _overlayEntry = null;
+  }
+
+  OverlayEntry _createOverlayEntry() {
+    // Get the render box of the search field to determine its position.
+    RenderBox renderBox = _searchFieldKey.currentContext!.findRenderObject() as RenderBox;
+    var size = renderBox.size;
+    var offset = renderBox.localToGlobal(Offset.zero);
+
+    return OverlayEntry(
+      builder: (context) => Positioned(
+        left: offset.dx,
+        top: offset.dy + size.height,
+        width: size.width,
+        child: Material(
+          elevation: 4.0,
+          // Wrap in ClipRRect to give soft rounded corners.
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: Container(
+              height: 250, // Adjust height as needed.
+              color: Colors.white,
+              child: _buildSearchResultsOverlay(),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+  
+
+  /// This widget builds the list of search results that appear in the overlay.
+  Widget _buildSearchResultsOverlay() {
+  return StreamBuilder<QuerySnapshot>(
+    stream: FirebaseFirestore.instance
+        .collection('documents')
+        .where('userId', isEqualTo: AuthService().currentUserId)
+        .orderBy('title')
+        .startAt([activeSearchQuery])
+        .endAt([activeSearchQuery + '\uf8ff'])
+        .snapshots(),
+    builder: (context, snapshot) {
+      if (snapshot.connectionState == ConnectionState.waiting) {
+        return Center(child: CircularProgressIndicator());
+      }
+      if (snapshot.hasError) {
+        return Center(child: Text("Error: ${snapshot.error}"));
+      }
+      if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+        return Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Text("No matching documents found."),
+        );
+      }
+      final docs = snapshot.data!.docs;
+      return ListView.builder(
+        itemCount: docs.length,
+        itemBuilder: (context, index) {
+          final docData = docs[index].data() as Map<String, dynamic>;
+          return Card(
+            margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            elevation: 2,
+            child: ListTile(
+              leading: const Icon(Icons.insert_drive_file, color: Colors.blue),
+              title: Text(docData['title'] ?? 'Untitled'),
+              subtitle: Text(docData['description'] ?? ''),
+              onTap: () {
+                _removeOverlay();
+                Navigator.pushNamed(
+                  context,
+                  viewRoute,
+                  arguments: {'documentId': docs[index].id},
+                );
+              },
+            ),
+          );
+        },
+      );
+    },
+  );
+}
+
+
+
+  @override
+  void dispose() {
+    searchController.removeListener(_onSearchChanged);
+    _debounce?.cancel();
+    searchController.dispose();
+    _removeOverlay();
+    super.dispose();
   }
 
   /// Loads the profile picture for the current user from SharedPreferences.
@@ -592,19 +771,12 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  @override
-  void dispose() {
-    searchController.dispose();
-    super.dispose();
-  }
-
   /// Builds the AppBar with a profile picture (if available) and the user's name.
-  PreferredSizeWidget buildAppBar() {
+  PreferredSizeWidget _buildAppBar() {
     return AppBar(
       automaticallyImplyLeading: false,
       title: Row(
         children: [
-          // Profile picture section.
           GestureDetector(
             onTap: () {
               // Optionally navigate to a profile screen.
@@ -638,62 +810,6 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-    );
-  }
-
-  /// Widget to display search results based on [searchQuery].
-  Widget _buildSearchResults() {
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('documents')
-          .where('userId', isEqualTo: AuthService().currentUserId)
-          .where('title', isGreaterThanOrEqualTo: searchQuery)
-          .where('title', isLessThanOrEqualTo: searchQuery + '\uf8ff')
-          .snapshots(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return const Padding(
-            padding: EdgeInsets.all(8.0),
-            child: Text("No matching documents found."),
-          );
-        }
-        final docs = snapshot.data!.docs;
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              "Search Results",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 10),
-            ListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: docs.length,
-              itemBuilder: (context, index) {
-                final docData = docs[index].data() as Map<String, dynamic>;
-                return Card(
-                  margin: const EdgeInsets.symmetric(vertical: 6),
-                  child: ListTile(
-                    title: Text(docData['title'] ?? 'Untitled'),
-                    subtitle: Text(docData['description'] ?? ''),
-                    onTap: () {
-                      Navigator.pushNamed(
-                        context,
-                        viewRoute,
-                        arguments: {'documentId': docs[index].id},
-                      );
-                    },
-                  ),
-                );
-              },
-            ),
-          ],
-        );
-      },
     );
   }
 
@@ -771,8 +887,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
                   itemCount: categories.length,
-                  separatorBuilder: (context, index) =>
-                      const SizedBox(width: 16),
+                  separatorBuilder: (context, index) => const SizedBox(width: 16),
                   itemBuilder: (context, index) {
                     final category = categories[index];
                     return GestureDetector(
@@ -799,14 +914,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                               ],
                             ),
-                            child: const Icon(Icons.folder,
-                                size: 40, color: Colors.blue),
+                            child: const Icon(Icons.folder, size: 40, color: Colors.blue),
                           ),
                           const SizedBox(height: 8),
                           Text(
                             category.name,
-                            style: const TextStyle(
-                                fontSize: 16, fontWeight: FontWeight.bold),
+                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                           ),
                         ],
                       ),
@@ -824,8 +937,7 @@ class _HomeScreenState extends State<HomeScreen> {
   /// Widget to display upcoming reminders (only those not completed and within 30 days).
   Widget _buildUpcomingRemindersSection() {
     return FutureBuilder<List<Reminder>>(
-      future:
-          ReminderService().fetchReminders(userId: AuthService().currentUserId),
+      future: ReminderService().fetchReminders(userId: AuthService().currentUserId),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -866,47 +978,35 @@ class _HomeScreenState extends State<HomeScreen> {
             Column(
               children: reminders.map((reminder) {
                 return FutureBuilder<String>(
-                  future: DocumentService()
-                      .fetchDocumentName(reminder.documentId),
+                  future: DocumentService().fetchDocumentName(reminder.documentId),
                   builder: (context, documentSnapshot) {
-                    if (documentSnapshot.connectionState ==
-                        ConnectionState.waiting) {
-                      return const Center(
-                          child: CircularProgressIndicator());
+                    if (documentSnapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
                     } else if (documentSnapshot.hasError) {
                       return const ListTile(
                         leading: Icon(Icons.insert_drive_file, color: Colors.red),
                         title: Text("Error fetching document name"),
                       );
                     }
-                    final docTitle =
-                        documentSnapshot.data ?? "Unknown Document";
-                    final daysLeft =
-                        reminder.reminderDateTime.difference(now).inDays;
-                    final progress = daysLeft > 0
-                        ? (1 - (daysLeft / 30)).clamp(0.0, 1.0)
-                        : 1.0;
+                    final docTitle = documentSnapshot.data ?? "Unknown Document";
+                    final daysLeft = reminder.reminderDateTime.difference(now).inDays;
+                    final progress = daysLeft > 0 ? (1 - (daysLeft / 30)).clamp(0.0, 1.0) : 1.0;
                     return Card(
                       margin: const EdgeInsets.only(bottom: 10),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       elevation: 3,
                       child: ListTile(
                         contentPadding: const EdgeInsets.all(12),
-                        leading: const Icon(Icons.insert_drive_file,
-                            color: Colors.blue, size: 40),
+                        leading: const Icon(Icons.insert_drive_file, color: Colors.blue, size: 40),
                         title: Text(
                           docTitle,
-                          style: const TextStyle(
-                              fontSize: 16, fontWeight: FontWeight.bold),
+                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                         ),
                         subtitle: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text("Reminder Date: ${DateFormat('yyyy-MM-dd HH:mm').format(reminder.reminderDateTime)}"),
-                            Text("$daysLeft days left",
-                                style: const TextStyle(color: Colors.grey)),
+                            Text("$daysLeft days left", style: const TextStyle(color: Colors.grey)),
                             const SizedBox(height: 6),
                             LinearProgressIndicator(value: progress),
                           ],
@@ -938,6 +1038,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               for (var doc in reminderQuerySnapshot.docs) {
                                 await doc.reference.delete();
                               }
+                              await NotificationService.cancelScheduledNotification(reminder.documentId);
                               // Refresh UI.
                               setState(() {});
                             }
@@ -967,97 +1068,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  /// Builds the AppBar for HomeScreen.
-  PreferredSizeWidget _buildAppBar() {
-    return AppBar(
-      automaticallyImplyLeading: false,
-      title: Row(
-        children: [
-          // Profile picture section: If a profile picture is found in SharedPreferences (for current user), show it; otherwise, show default icon.
-          GestureDetector(
-            onTap: () {
-              // Optionally navigate to a profile screen.
-            },
-            child: CircleAvatar(
-              backgroundColor: Colors.grey.shade300,
-              backgroundImage: _profileImage != null ? FileImage(_profileImage!) : null,
-              child: _profileImage == null ? Icon(Icons.person, color: Colors.white) : null,
-            ),
-          ),
-          const SizedBox(width: 10),
-          FutureBuilder<String>(
-            future: AuthService().getUserName(),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Text("Loading...",
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold));
-              } else if (snapshot.hasError) {
-                return const Text("Error",
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold));
-              }
-              return Text(snapshot.data ?? "User",
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold));
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Widget to display search results.
-  Widget buildSearchResults() {
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('documents')
-          .where('userId', isEqualTo: AuthService().currentUserId)
-          .where('title', isGreaterThanOrEqualTo: searchQuery)
-          .where('title', isLessThanOrEqualTo: searchQuery + '\uf8ff')
-          .snapshots(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return const Padding(
-            padding: EdgeInsets.all(8.0),
-            child: Text("No matching documents found."),
-          );
-        }
-        final docs = snapshot.data!.docs;
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text("Search Results",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 10),
-            ListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: docs.length,
-              itemBuilder: (context, index) {
-                final docData = docs[index].data() as Map<String, dynamic>;
-                return Card(
-                  margin: const EdgeInsets.symmetric(vertical: 6),
-                  child: ListTile(
-                    title: Text(docData['title'] ?? 'Untitled'),
-                    subtitle: Text(docData['description'] ?? ''),
-                    onTap: () {
-                      Navigator.pushNamed(
-                        context,
-                        viewRoute,
-                        arguments: {'documentId': docs[index].id},
-                      );
-                    },
-                  ),
-                );
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -1068,8 +1078,9 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Search bar.
+              // Search bar with the GlobalKey.
               TextField(
+                key: _searchFieldKey,
                 controller: searchController,
                 decoration: InputDecoration(
                   hintText: 'Search documents...',
@@ -1080,9 +1091,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-              if (searchQuery.isNotEmpty)
-                buildSearchResults()
-              else ...[
+              // When no search query is active, show the normal home content.
+              if (activeSearchQuery.isEmpty) ...[
                 _buildCategoriesSection(),
                 const SizedBox(height: 20),
                 _buildUpcomingRemindersSection(),
@@ -1093,33 +1103,31 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       bottomNavigationBar: CustomBottomNavBar(
         currentIndex: currentTabIndex,
-        onTap: _onBottomNavTap,
+        onTap: (index) {
+          setState(() {
+            currentTabIndex = index;
+          });
+          switch (index) {
+            case 0:
+              Navigator.pushReplacementNamed(context, homeRoute);
+              break;
+            case 1:
+              Navigator.pushReplacementNamed(context, reminderRoute);
+              break;
+            case 2:
+              Navigator.pushNamedAndRemoveUntil(context, addDocumentRoute, (route) => false);
+              break;
+            case 3:
+              Navigator.pushNamedAndRemoveUntil(context, locationRoute, (route) => false);
+              break;
+            case 4:
+              Navigator.pushReplacementNamed(context, settingsRoute);
+              break;
+            default:
+              break;
+          }
+        },
       ),
     );
-  }
-
-  void _onBottomNavTap(int index) {
-    setState(() {
-      currentTabIndex = index;
-    });
-    switch (index) {
-      case 0:
-        Navigator.pushReplacementNamed(context, homeRoute);
-        break;
-      case 1:
-        Navigator.pushReplacementNamed(context, reminderRoute);
-        break;
-      case 2:
-        Navigator.pushNamedAndRemoveUntil(context, addDocumentRoute, (route) => false);
-        break;
-      case 3:
-        Navigator.pushNamedAndRemoveUntil(context, locationRoute, (route) => false);
-        break;
-      case 4:
-        Navigator.pushReplacementNamed(context, settingsRoute);
-        break;
-      default:
-        break;
-    }
   }
 }

@@ -291,6 +291,7 @@ import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dockeeper/core/routes.dart';
+import 'package:dockeeper/services/notification_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -562,6 +563,8 @@ class _DocumentScreenState extends State<DocumentScreen> {
       for (var doc in reminderQuerySnapshot.docs) {
         await doc.reference.delete();
       }
+      await NotificationService.cancelScheduledNotification(documentId);
+      
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Document and associated reminders deleted successfully.')),
       );

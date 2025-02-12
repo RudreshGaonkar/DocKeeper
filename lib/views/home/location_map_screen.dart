@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dockeeper/core/routes.dart';
 import 'package:dockeeper/models/category_model.dart';
 import 'package:dockeeper/models/document_model.dart';
+import 'package:dockeeper/services/auth_service.dart';
 import 'package:dockeeper/services/category_service.dart';
 import 'package:flutter/material.dart';
 import 'package:geocoding/geocoding.dart';
@@ -62,10 +63,11 @@ class _LocationScreenState extends State<LocationScreen> {
       _documentLocation = null;
     });
     try {
-      // Query Firestore for documents with the selected categoryId.
+      // Query Firestore for documents with the selected categoryId and current user's userId.
       final querySnapshot = await FirebaseFirestore.instance
           .collection('documents')
           .where('categoryId', isEqualTo: category.categoryId)
+          .where('userId', isEqualTo: AuthService().currentUserId) 
           .get();
       final docs = querySnapshot.docs
           .map((doc) => Document.fromJson(doc.data()))
@@ -84,6 +86,7 @@ class _LocationScreenState extends State<LocationScreen> {
       });
     }
   }
+
 
   /// Converts an address into a LatLng using the geocoding package.
   Future<LatLng> _getLatLngFromAddress(String? address) async {
@@ -184,6 +187,11 @@ class _LocationScreenState extends State<LocationScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  const Text(
+                      "Please select a category to filter your documents:",
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                    ),
+                    const SizedBox(height: 8),
                   // Dropdown to select a category.
                   DropdownButtonFormField<Category>(
                     decoration: InputDecoration(
@@ -207,6 +215,11 @@ class _LocationScreenState extends State<LocationScreen> {
                     },
                   ),
                   const SizedBox(height: 16),
+                  const Text(
+                    "Now, select a document to view its location:",
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                  ),
+                  const SizedBox(height: 8),
                   // Dropdown to select a document.
                   DropdownButtonFormField<Document>(
                     decoration: InputDecoration(

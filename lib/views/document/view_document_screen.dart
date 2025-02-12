@@ -415,16 +415,14 @@
 //   }
 // }
 import 'dart:io';
-import 'dart:typed_data';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dockeeper/core/routes.dart';
+import 'package:dockeeper/services/notification_service.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:open_file_plus/open_file_plus.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:dockeeper/widgets/custom_bottom_nav_bar.dart';
 
 class ViewScreen extends StatefulWidget {
@@ -636,6 +634,7 @@ class _ViewScreenState extends State<ViewScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Document and associated reminders deleted successfully.')),
       );
+      await NotificationService.cancelScheduledNotification(documentId);
       Navigator.pop(context);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -658,6 +657,9 @@ class _ViewScreenState extends State<ViewScreen> {
         setState(() {
           _reminderCompleted = !currentStatus;
         });
+        if (!currentStatus) {
+          await NotificationService.cancelScheduledNotification(reminderDoc.data()['documentId']);
+        }
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Reminder marked as ${_reminderCompleted ? 'done' : 'not done'}')),
         );

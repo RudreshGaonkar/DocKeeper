@@ -76,8 +76,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   /// Logs out and redirects to the Reset Password screen.
   Future<void> _resetPassword() async {
-    await FirebaseAuth.instance.signOut();
-    Navigator.pushNamedAndRemoveUntil(context, resetRoute, (route) => false);
+    // await FirebaseAuth.instance.signOut();
+    Navigator.pushNamed(context, resetRoute);
   }
 
   /// Deletes the user account after confirmation.
