@@ -164,7 +164,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               password,
                             );
                             // Navigate to email verification screen
-                            Navigator.pushNamedAndRemoveUntil(context, verifyEmailRoute, (route) => false);
+                            Navigator.pushNamed(context, verifyEmailRoute);
                           } catch (e) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(content: Text(e.toString())),

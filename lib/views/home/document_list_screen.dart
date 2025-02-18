@@ -326,7 +326,7 @@ class _DocumentScreenState extends State<DocumentScreen> {
   Future<void> _fetchCategoryName() async {
     try {
       final categoryDoc = await FirebaseFirestore.instance
-          .collection('categories')
+          .collection('public_categories')
           .doc(widget.categoryId)
           .get();
 

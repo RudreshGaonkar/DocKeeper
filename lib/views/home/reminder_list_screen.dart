@@ -84,15 +84,15 @@ class _ReminderScreenState extends State<ReminderScreen> {
     try {
       List<Reminder> reminders =
           await ReminderService().fetchReminders(userId: userId!);
-      final now = DateTime.now();
+      // final now = DateTime.now();
 
       if (_selectedFilter != 'completed') {
         // For "newlyAdded" and "dateAdded", exclude completed reminders.
         reminders = reminders.where((r) => !r.isCompleted).toList();
         // Only show reminders that are within 30 days.
-        reminders = reminders
-            .where((r) => r.reminderDateTime.difference(now).inDays <= 30)
-            .toList();
+        // reminders = reminders
+        //     .where((r) => r.reminderDateTime.difference(now).inDays <= 30)
+        //     .toList();
       } else {
         // For the "completed" filter, show only completed reminders.
         reminders = reminders.where((r) => r.isCompleted).toList();
