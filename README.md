@@ -46,30 +46,30 @@ your needs and offers a seamless, efficient experience.
 
 
 # Features: 
-● Document Scanning & Upload 
+● Document Scanning & Upload : 
   Use your device’s camera to quickly scan paper documents and convert them 
   into high-quality digital PDFs. This feature allows you to capture important 
   documents on the go and store them securely, eliminating the need for 
   physical paper files. 
 
-● Search & Retrieval
+● Search & Retrieval : 
   Leverage search functionality to find your documents instantly. Whether 
   you’re searching by title, description, or category, Dockeeper’s intuitive 
   search tool saves you time by eliminating the hassle of manual file browsing. 
 
-● Automated Reminders & Custom Alerts
+● Automated Reminders & Custom Alerts : 
   Stay on top of important deadlines with automated reminders for document 
   expirations, renewals, or review dates. Personalize alert times to fit your 
   schedule, ensuring that you never miss a critical date, whether you’re at home 
   or on the move. 
 
-● Enhanced Document Accessibility with Geolocation
+● Enhanced Document Accessibility with Geolocation : 
   Associate your documents with specific locations by tagging them with 
   geolocation data. This feature helps you quickly recall where a document was 
   issued or where it needs to be used, adding an extra layer of context to your 
   files. 
 
-● Seamless Sharing 
+● Seamless Sharing : 
   Share your documents directly from Dockeeper with colleagues, friends, or 
   family. The app’s seamless sharing capability facilitates efficient 
   communication, making it easy to distribute important information with just a 
