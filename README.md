@@ -1,8 +1,8 @@
 ## DocKeeper
 
-# A new Flutter project [Cross-Platform App (Android / IOS)].
+# A Flutter project [Cross-Platform App (Android & IOS)].
 
-## INTRODUCTION
+# INTRODUCTION
 
 Gone are the days of juggling between multiple apps and disorganized file systems. 
 Dockeeper isn’t just another document management app; it’s your all‑in‑one digital 
@@ -27,7 +27,7 @@ navigation, Dockeeper isn’t just a tool—it’s your strategic partner in sta
 and efficient, empowering you to manage your documents with confidence and ease. 
 
 
-## PROPOSED SYSTEM AND ITS FEATURES 
+# PROPOSED SYSTEM AND ITS FEATURES 
 
 Dockeeper is a comprehensive mobile document management system designed to 
 streamline the process of storing, organizing, and managing your important documents. 
@@ -47,33 +47,33 @@ your needs and offers a seamless, efficient experience.
 
 # Features: 
 ● Document Scanning & Upload 
-Use your device’s camera to quickly scan paper documents and convert them 
-into high-quality digital PDFs. This feature allows you to capture important 
-documents on the go and store them securely, eliminating the need for 
-physical paper files. 
+  Use your device’s camera to quickly scan paper documents and convert them 
+  into high-quality digital PDFs. This feature allows you to capture important 
+  documents on the go and store them securely, eliminating the need for 
+  physical paper files. 
 
 ● Search & Retrieval
-Leverage search functionality to find your documents instantly. Whether 
-you’re searching by title, description, or category, Dockeeper’s intuitive 
-search tool saves you time by eliminating the hassle of manual file browsing. 
+  Leverage search functionality to find your documents instantly. Whether 
+  you’re searching by title, description, or category, Dockeeper’s intuitive 
+  search tool saves you time by eliminating the hassle of manual file browsing. 
 
 ● Automated Reminders & Custom Alerts
-Stay on top of important deadlines with automated reminders for document 
-expirations, renewals, or review dates. Personalize alert times to fit your 
-schedule, ensuring that you never miss a critical date, whether you’re at home 
-or on the move. 
+  Stay on top of important deadlines with automated reminders for document 
+  expirations, renewals, or review dates. Personalize alert times to fit your 
+  schedule, ensuring that you never miss a critical date, whether you’re at home 
+  or on the move. 
 
 ● Enhanced Document Accessibility with Geolocation
-Associate your documents with specific locations by tagging them with 
-geolocation data. This feature helps you quickly recall where a document was 
-issued or where it needs to be used, adding an extra layer of context to your 
-files. 
+  Associate your documents with specific locations by tagging them with 
+  geolocation data. This feature helps you quickly recall where a document was 
+  issued or where it needs to be used, adding an extra layer of context to your 
+  files. 
 
 ● Seamless Sharing 
-Share your documents directly from Dockeeper with colleagues, friends, or 
-family. The app’s seamless sharing capability facilitates efficient 
-communication, making it easy to distribute important information with just a 
-few taps.
+  Share your documents directly from Dockeeper with colleagues, friends, or 
+  family. The app’s seamless sharing capability facilitates efficient 
+  communication, making it easy to distribute important information with just a 
+  few taps.
 
 
 
