@@ -54,8 +54,8 @@ your needs and offers a seamless, efficient experience.
 
 ● Search & Retrieval : 
   Leverage search functionality to find your documents instantly. Whether 
-  you’re searching by title, description, or category, Dockeeper’s intuitive 
-  search tool saves you time by eliminating the hassle of manual file browsing. 
+  you’re searching by title Dockeeper’s intuitive search tool saves you time 
+  by eliminating the hassle of manual file browsing. 
 
 ● Automated Reminders & Custom Alerts : 
   Stay on top of important deadlines with automated reminders for document 
